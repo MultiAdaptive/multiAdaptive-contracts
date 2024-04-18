@@ -228,7 +228,7 @@ contract Deploy is Deployer {
     function _run() internal {
         deploySafe();
         setupSuperchain();
-        setupOpChain();
+        setupChain();
     }
 
     ////////////////////////////////////////////////////////////////
@@ -242,17 +242,14 @@ contract Deploy is Deployer {
     function setupSuperchain() public {
         console.log("Setting up Superchain");
 
-        // Deploy a new ProxyAdmin and AddressManager
-        // This proxy will be used on the SuperchainConfig and ProtocolVersions contracts, as well as the contracts
-        // in the OP Chain system.
         deployAddressManager();
         deployProxyAdmin();
         transferProxyAdminOwnership();
     }
 
     /// @notice Deploy a new OP Chain, with an existing SuperchainConfig provided
-    function setupOpChain() public {
-        console.log("Deploying setupOpChain");
+    function setupChain() public {
+        console.log("Deploying setupChain");
 
         // Ensure that the requisite contracts are deployed
         mustGetAddress("SystemOwnerSafe");
@@ -306,15 +303,15 @@ contract Deploy is Deployer {
         signers[0] = msg.sender;
 
         bytes memory initData = abi.encodeWithSelector(
-            Safe.setup.selector,
-            signers,
-            1,
-            address(0),
-            hex"",
-            address(0),
-            address(0),
-            0,
-            address(0)
+        Safe.setup.selector,
+        signers,
+        1,
+        address(0),
+        hex"",
+    address(0),
+    address(0),
+        0,
+        address(0)
         );
         address safe = address(
             safeProxyFactory.createProxyWithNonce(
@@ -420,9 +417,9 @@ contract Deploy is Deployer {
 
     /// @notice Deploy the DomiconNode
     function deployDomiconCommitment()
-        public
-        broadcast
-        returns (address addr_)
+    public
+    broadcast
+    returns (address addr_)
     {
         console.log("Deploying DomiconCommitment implementation");
         DomiconCommitment comm = new DomiconCommitment{salt: _implSalt()}();
