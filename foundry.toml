@@ -3,4 +3,24 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+script = 'script'
+optimizer = true
+optimizer_runs = 999999
+
+
+ffi = true
+fs_permissions = [
+  { access='read-write', path='./.resource-metering.csv' },
+  { access='read-write', path='./snapshots/' },
+  { access='read-write', path='./deployments/' },
+  { access='read', path='./deploy-config/' },
+  { access='read', path='./periphery-deploy-config/' },
+  { access='read', path='./broadcast/' },
+  { access='read', path = './out/' },
+  { access='write', path='./semver-lock.json' },
+  { access='read-write', path='./.testdata/' },
+  { access='read', path='./kout-deployment' }
+]
+
+[etherscan]
+unknown_chain = { key = "Y4X6UASZNPTV57TJHD7Q7M5JE43T9AD515",chain = "mainnet", url = "https://api.etherscan.io/api" }
