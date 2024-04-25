@@ -178,19 +178,4 @@ library ForgeArtifacts {
         bytes memory rawSlot = vm.parseJson(string(vm.ffi(command)));
         slot_ = abi.decode(rawSlot, (StorageSlot));
     }
-
-    /// @notice Accepts a filepath and then ensures that the directory
-    ///         exists for the file to live in.
-    function ensurePath(string memory _path) internal {
-        (, bytes memory returndata) = address(vm).call(
-            abi.encodeWithSignature("split(string,string)", _path, string("/"))
-        );
-        string[] memory outputs = abi.decode(returndata, (string[]));
-
-        string memory path = "";
-        for (uint256 i = 0; i < outputs.length - 1; i++) {
-            path = string.concat(path, outputs[i], "/");
-        }
-        vm.createDir(path, true);
-    }
 }
