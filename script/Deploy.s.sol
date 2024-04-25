@@ -208,7 +208,7 @@ contract Deploy is Deployer {
     //                    SetUp and Run                           //
     ////////////////////////////////////////////////////////////////
 
-    /// @notice Deploy all of the L1 contracts necessary for a full Superchain with a single Op Chain.
+    /// @notice Deploy all of contracts.
     function run() public {
         _run();
     }
@@ -227,29 +227,26 @@ contract Deploy is Deployer {
     /// @notice Internal function containing the deploy logic.
     function _run() internal {
         deploySafe();
-        setupSuperchain();
-        setupChain();
+        setupAdmin();
+        setupContracts();
     }
 
     ////////////////////////////////////////////////////////////////
     //           High Level Deployment Functions                  //
     ////////////////////////////////////////////////////////////////
 
-    /// @notice Deploy a full system with a new SuperchainConfig
-    ///         The Superchain system has 2 singleton contracts which lie outside of an OP Chain:
-    ///         1. The SuperchainConfig contract
-    ///         2. The ProtocolVersions contract
-    function setupSuperchain() public {
-        console.log("Setting up Superchain");
+    /// @notice
+    function setupAdmin() public {
+        console.log("Setting up Admin");
 
         deployAddressManager();
         deployProxyAdmin();
         transferProxyAdminOwnership();
     }
 
-    /// @notice Deploy a new OP Chain, with an existing SuperchainConfig provided
-    function setupChain() public {
-        console.log("Deploying setupChain");
+    /// @notice Deploy contracts
+    function setupContracts() public {
+        console.log("Deploying Contracts");
 
         // Ensure that the requisite contracts are deployed
         mustGetAddress("SystemOwnerSafe");
