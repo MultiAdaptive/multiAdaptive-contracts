@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {ResourceMetering} from "src/ResourceMetering.sol";
-
 /// @title Constants
 /// @notice Constants is a library for storing constants. Simple! Don't put everything in here, just
 ///         the stuff used in multiple contracts. Constants that only apply to a single contract
@@ -18,23 +16,4 @@ library Constants {
     /// @dev `bytes32(uint256(keccak256('eip1967.proxy.admin')) - 1)`
     bytes32 internal constant PROXY_OWNER_ADDRESS =
         0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-
-    /// @notice Returns the default values for the ResourceConfig. These are the recommended values
-    ///         for a production network.
-    function DEFAULT_RESOURCE_CONFIG()
-        internal
-        pure
-        returns (ResourceMetering.ResourceConfig memory)
-    {
-        ResourceMetering.ResourceConfig memory config = ResourceMetering
-            .ResourceConfig({
-                maxResourceLimit: 20_000_000,
-                elasticityMultiplier: 10,
-                baseFeeMaxChangeDenominator: 8,
-                minimumBaseFee: 1 gwei,
-                systemTxMaxGas: 1_000_000,
-                maximumBaseFee: type(uint128).max
-            });
-        return config;
-    }
 }
