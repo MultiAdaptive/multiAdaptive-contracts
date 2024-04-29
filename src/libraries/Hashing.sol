@@ -21,13 +21,17 @@ library Hashing {
         return keccak256(abi.encode(_sender,_addresses));
     }
 
+    function hashSignatures(bytes[] calldata _signatures) internal pure returns (bytes32){
+        return keccak256(abi.encode(_signatures));
+    }
+
     /// @notice Used for generating a signature hash.
     function hashData(address _user,address _submiter,uint64 _index,uint64 _length,bytes memory _commit) internal view returns (bytes32) {
         uint64 _chainId;
         assembly {
             _chainId := chainid()
         }
-        bytes memory data = abi.encodePacked(
+        bytes memory data = abi.encode(
             _chainId,
             _user,
             _submiter,
@@ -36,6 +40,10 @@ library Hashing {
             _commit
         );
         return keccak256(data);
+    }
+
+    function hashFold(uint _r,uint _n) internal view returns (bytes32) {
+        return keccak256(abi.encode(_r,_n));
     }
 
     /// @notice Verify Signature.
