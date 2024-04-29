@@ -7,33 +7,24 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ISemver} from "src/universal/ISemver.sol";
 import {DomiconNode} from "src/DomiconNode.sol";
+import {DomiconNode} from "src/DomiconNode.sol";
+import {StorageManagement,DasKeySetInfo} from "src/StorageManagement.sol";
 import {Hashing} from "src/libraries/Hashing.sol";
 
-struct DasKeySetInfo {
-    uint requiredAmountOfSignatures;
-    address[] addrs;
-}
 
 struct DaDetails {
-    address user;
-    bytes commitment;
     uint timestamp;
-    uint nonce;
-    uint index;
-    uint len;
-    bytes32 root;
-    bytes32 dasKey;
-    bytes[] signatures;
+    bytes32 hashSignatures;
 }
 
 contract DomiconCommitment is Initializable, ISemver {
     using SafeERC20 for IERC20;
 
     /// @notice Semantic version.
-    /// @custom:semver 1.4.1
-    string public constant version = "1.4.1";
+    /// @custom:semver 0.1.0
+    string public constant version = "0.1.0";
 
-    bytes32 public committeeHash;
+    bytes32 public committeeRoot;
 
     address public DOM;
 
@@ -41,31 +32,24 @@ contract DomiconCommitment is Initializable, ISemver {
 
     DomiconNode public domiconNode;
 
+    StorageManagement public storageManagement;
+
     mapping(address => mapping(uint256 => bytes)) public userCommitments;
     mapping(address => uint256) public indices;
     mapping(uint => bytes) public commitments;
     mapping(bytes => DaDetails) public daDetails;
 
-    mapping(bytes32 => DasKeySetInfo) public dasKeySetInfo;
-
-    event DasKeySetInfoRegistered(address indexed user, bytes32 dasKey);
     event SendDACommitment(
-        uint256 index,
-        uint256 length,
-        uint256 price,
-        address indexed broadcaster,
-        address indexed user,
-        bytes sign,
-        bytes commitment
+        address user,
+        bytes commitment,
+        uint timestamp,
+        uint nonce,
+        uint index,
+        uint len,
+        bytes32 root,
+        bytes32 dasKey,
+        bytes[] signatures
     );
-
-    modifier onlyEOA() {
-        require(
-            !Address.isContract(msg.sender),
-            "DomiconCommitment: function can only be called from an EOA"
-        );
-        _;
-    }
 
     modifier onlyBroadcastNode() {
         require(
@@ -75,7 +59,7 @@ contract DomiconCommitment is Initializable, ISemver {
         _;
     }
 
-    /// @notice Constructs the L1StandardBridge contract.
+    /// @notice Constructs the DomiconCommitment contract.
     constructor() {}
 
     /// @notice Initializer
@@ -90,91 +74,53 @@ contract DomiconCommitment is Initializable, ISemver {
         bytes[] calldata _signatures,
         bytes calldata _commitment
     ) external {
+
+        DasKeySetInfo memory info = storageManagement.DASKEYSETINFO(_dasKey);
         require(
-            dasKeySetInfo[_dasKey].addrs.length > 0,
+            info.addrs.length > 0,
             "DomiconCommitment:key does not exist"
         );
         require(
-            dasKeySetInfo[_dasKey].addrs.length == _signatures.length,
+            info.addrs.length == _signatures.length,
             "DomiconCommitment:mismatchedSignaturesCount"
         );
-        require(indices[msg.sender] == _index, "DomiconCommitment:index error");
+        require(indices[tx.origin] == _index, "DomiconCommitment:index error");
 
-        address[] memory broadcastAddresses = dasKeySetInfo[_dasKey].addrs;
+        uint num;
         for (uint256 i = 0; i < _signatures.length; i++) {
-            require(
-                domiconNode.IsNodeBroadcast(broadcastAddresses[i]),
-                "DomiconCommitment:broadcast node address error"
-            );
-            require(
-                checkSign(
-                    broadcastAddresses[i],
-                    msg.sender,
-                    _index,
-                    _length,
-                    _signatures[i],
-                    _commitment
-                )
-            );
+            if (!domiconNode.IsNodeBroadcast(info.addrs[i])) {
+                continue;
+            }
+
+            if (checkSign(info.addrs[i], tx.origin, _index, _length, _signatures[i], _commitment)) {
+                num++;
+            }
         }
 
-        IERC20(DOM).safeTransferFrom(msg.sender, address(this), 200);
+        require(num >= info.requiredAmountOfSignatures, "DomiconCommitment:signature count mismatch");
 
-        committeeHash = Hashing.hashCommitment(
+        IERC20(DOM).safeTransferFrom(tx.origin, address(this), getGas(_length));
+
+        committeeRoot = Hashing.hashCommitment(
             _commitment,
-            msg.sender,
-            committeeHash
+            tx.origin,
+            committeeRoot
         );
 
+        emit SendDACommitment(tx.origin,_commitment,block.timestamp,nonce,_index,_length,committeeRoot,_dasKey,_signatures);
+
         daDetails[_commitment] = DaDetails({
-            user: msg.sender,
-            commitment: _commitment,
             timestamp: block.timestamp,
-            nonce: nonce,
-            index: _index,
-            len: _length,
-            root: committeeHash,
-            dasKey: _dasKey,
-            signatures: _signatures
+            hashSignatures: Hashing.hashSignatures(_signatures)
         });
-        commitments[nonce] = _commitment;
-        userCommitments[msg.sender][_index] = _commitment;
-        indices[msg.sender]++;
+
+        userCommitments[tx.origin][_index] = _commitment;
+        indices[tx.origin]++;
         nonce++;
     }
 
-    function SetValidKeyset(
-        uint _requiredAmountOfSignatures,
-        address[] calldata _addrs
-    ) external returns (bytes32 ksHash) {
-        require(
-            _addrs.length >= _requiredAmountOfSignatures,
-            "DomiconCommitment:tooManyRequiredSignatures"
-        );
-        for (uint256 i = 0; i < _addrs.length; i++) {
-            require(
-                domiconNode.IsNodeBroadcast(_addrs[i]),
-                "DomiconCommitment:broadcast node address error"
-            );
-        }
-
-        DasKeySetInfo memory info = DasKeySetInfo({
-            requiredAmountOfSignatures: _requiredAmountOfSignatures,
-            addrs: _addrs
-        });
-        ksHash = Hashing.hashAddresses(msg.sender, _addrs);
-
-        dasKeySetInfo[ksHash] = info;
-        emit DasKeySetInfoRegistered(msg.sender, ksHash);
-    }
-
-    function DASKEYSETINFO(
-        bytes32 _key
-    ) public view returns (uint, address[] memory) {
-        return (
-            dasKeySetInfo[_key].requiredAmountOfSignatures,
-            dasKeySetInfo[_key].addrs
-        );
+    function getUserCommitments(address _user,uint _index) public view returns(bytes){
+        return userCommitments[_user][_index];
     }
 
     function COMMITMENTS(uint _nonce) public view returns (DaDetails memory) {
