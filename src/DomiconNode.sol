@@ -11,8 +11,8 @@ contract DomiconNode is Initializable, ISemver {
     using SafeERC20 for IERC20;
 
     /// @notice Semantic version.
-    /// @custom:semver 1.4.1
-    string public constant version = "1.4.1";
+    /// @custom:semver 0.1.0
+    string public constant version = "0.1.0";
 
     address public DOM;
 
