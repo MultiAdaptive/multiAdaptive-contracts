@@ -63,8 +63,9 @@ contract DomiconCommitment is Initializable, ISemver {
     constructor() {}
 
     /// @notice Initializer
-    function initialize(DomiconNode _domiconNode) public initializer {
+    function initialize(DomiconNode _domiconNode,StorageManagement _storageManagement) public initializer {
         domiconNode = _domiconNode;
+        storageManagement = _storageManagement;
     }
 
     function SubmitCommitment(
@@ -119,7 +120,7 @@ contract DomiconCommitment is Initializable, ISemver {
         nonce++;
     }
 
-    function getUserCommitments(address _user,uint _index) public view returns(bytes){
+    function getUserCommitments(address _user,uint _index) public view returns(bytes memory){
         return userCommitments[_user][_index];
     }
 

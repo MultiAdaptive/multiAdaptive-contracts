@@ -31,7 +31,7 @@ library Hashing {
         assembly {
             _chainId := chainid()
         }
-        bytes memory data = abi.encode(
+        bytes memory data = abi.encodePacked(
             _chainId,
             _user,
             _submiter,
@@ -42,7 +42,7 @@ library Hashing {
         return keccak256(data);
     }
 
-    function hashFold(uint _r,uint _n) internal view returns (bytes32) {
+    function hashFold(uint _r,uint _n) internal pure returns (bytes32) {
         return keccak256(abi.encode(_r,_n));
     }
 

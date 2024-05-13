@@ -19,6 +19,7 @@ import {Proxy} from "src/universal/Proxy.sol";
 import {L1ChugSplashProxy} from "src/legacy/L1ChugSplashProxy.sol";
 import {DomiconNode} from "src/DomiconNode.sol";
 import {DomiconCommitment} from "src/DomiconCommitment.sol";
+import {StorageManagement} from "src/StorageManagement.sol";
 import {StorageSetter} from "src/universal/StorageSetter.sol";
 import {Chains} from "script/Chains.sol";
 import {Config} from "script/Config.sol";
@@ -264,6 +265,7 @@ contract Deploy is Deployer {
 
         deployERC1967Proxy("DomiconNodeProxy");
         deployERC1967Proxy("DomiconCommitmentProxy");
+        deployERC1967Proxy("StorageManagementProxy");
 
         //        transferAddressManagerOwnership(); // to the ProxyAdmin
     }
@@ -273,6 +275,7 @@ contract Deploy is Deployer {
         console.log("Deploying implementations");
 
         deployDomiconNode();
+        deployStorageManagement();
         deployDomiconCommitment();
     }
 
@@ -281,6 +284,7 @@ contract Deploy is Deployer {
         console.log("Initializing implementations");
 
         initializeDomiconNode();
+        initializeStorageManagement();
         initializeDomiconCommitment();
     }
 
@@ -412,6 +416,16 @@ contract Deploy is Deployer {
         addr_ = address(node);
     }
 
+    function deployStorageManagement() public broadcast returns (address addr_) {
+        console.log("Deploying StorageManagement implementation");
+        StorageManagement storageManagement = new StorageManagement{salt: _implSalt()}();
+
+        save("StorageManagement", address(storageManagement));
+        console.log("StorageManagement deployed at %s", address(storageManagement));
+
+        addr_ = address(storageManagement);
+    }
+
     /// @notice Deploy the DomiconNode
     function deployDomiconCommitment()
     public
@@ -462,6 +476,24 @@ contract Deploy is Deployer {
         });
     }
 
+    function initializeStorageManagement() public broadcast {
+        console.log("Upgrading and initializing StorageManagement proxy");
+        address storageManagementProxy = mustGetAddress(
+            "StorageManagementProxy"
+        );
+        address storageManagement = mustGetAddress("StorageManagement");
+        address domiconNodeProxy = mustGetAddress("DomiconNodeProxy");
+
+        _upgradeAndCallViaSafe({
+            _proxy: payable(storageManagementProxy),
+            _implementation: storageManagement,
+            _innerCallData: abi.encodeCall(
+                StorageManagement.initialize,
+                (DomiconNode(domiconNodeProxy))
+            )
+        });
+    }
+
     function initializeDomiconCommitment() public broadcast {
         console.log("Upgrading and initializing DomiconCommitment proxy");
         address domiconCommitmentProxy = mustGetAddress(
@@ -469,13 +501,14 @@ contract Deploy is Deployer {
         );
         address domiconCommitment = mustGetAddress("DomiconCommitment");
         address domiconNodeProxy = mustGetAddress("DomiconNodeProxy");
+        address storageManagementProxy = mustGetAddress("StorageManagementProxy");
 
         _upgradeAndCallViaSafe({
             _proxy: payable(domiconCommitmentProxy),
             _implementation: domiconCommitment,
             _innerCallData: abi.encodeCall(
                 DomiconCommitment.initialize,
-                (DomiconNode(domiconNodeProxy))
+                (DomiconNode(domiconNodeProxy),StorageManagement(storageManagementProxy))
             )
         });
     }
