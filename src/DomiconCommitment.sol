@@ -10,14 +10,16 @@ import {DomiconNode} from "src/DomiconNode.sol";
 import {DomiconNode} from "src/DomiconNode.sol";
 import {StorageManagement,DasKeySetInfo} from "src/StorageManagement.sol";
 import {Hashing} from "src/libraries/Hashing.sol";
+import {Pairing} from "src/kzg/Pairing.sol";
 
-
-struct DaDetails {
-    uint timestamp;
-    bytes32 hashSignatures;
-}
 
 contract DomiconCommitment is Initializable, ISemver {
+
+    struct DaDetails {
+        uint timestamp;
+        bytes32 hashSignatures;
+    }
+
     using SafeERC20 for IERC20;
 
     /// @notice Semantic version.
@@ -34,14 +36,14 @@ contract DomiconCommitment is Initializable, ISemver {
 
     StorageManagement public storageManagement;
 
-    mapping(address => mapping(uint256 => bytes)) public userCommitments;
+    mapping(address => mapping(uint256 => Pairing.G1Point)) public userCommitments;
     mapping(address => uint256) public indices;
-    mapping(uint => bytes) public commitments;
-    mapping(bytes => DaDetails) public daDetails;
+    mapping(uint => Pairing.G1Point) public commitments;
+    mapping(bytes32 => DaDetails) public daDetails;
 
     event SendDACommitment(
         address user,
-        bytes commitment,
+        Pairing.G1Point commitment,
         uint timestamp,
         uint nonce,
         uint index,
@@ -73,7 +75,7 @@ contract DomiconCommitment is Initializable, ISemver {
         uint64 _length,
         bytes32 _dasKey,
         bytes[] calldata _signatures,
-        bytes calldata _commitment
+        Pairing.G1Point calldata _commitment
     ) external {
 
         DasKeySetInfo memory info = storageManagement.DASKEYSETINFO(_dasKey);
@@ -102,15 +104,18 @@ contract DomiconCommitment is Initializable, ISemver {
 
         IERC20(DOM).safeTransferFrom(tx.origin, address(this), getGas(_length));
 
-        committeeRoot = Hashing.hashCommitment(
-            _commitment,
+        committeeRoot = Hashing.hashCommitmentRoot(
+            _commitment.X,
+            _commitment.Y,
             tx.origin,
             committeeRoot
         );
 
         emit SendDACommitment(tx.origin,_commitment,block.timestamp,nonce,_index,_length,committeeRoot,_dasKey,_signatures);
 
-        daDetails[_commitment] = DaDetails({
+        bytes32 hash = Hashing.hashCommitment(_commitment.X,_commitment.Y);
+
+        daDetails[hash] = DaDetails({
             timestamp: block.timestamp,
             hashSignatures: Hashing.hashSignatures(_signatures)
         });
@@ -120,19 +125,22 @@ contract DomiconCommitment is Initializable, ISemver {
         nonce++;
     }
 
-    function getUserCommitments(address _user,uint _index) public view returns(bytes memory){
+    function getUserCommitments(address _user,uint _index) public view returns(Pairing.G1Point memory){
         return userCommitments[_user][_index];
     }
 
     function COMMITMENTS(uint _nonce) public view returns (DaDetails memory) {
-        return daDetails[commitments[_nonce]];
+        bytes32 hash = Hashing.hashCommitment(commitments[_nonce].X,commitments[_nonce].Y);
+        return daDetails[hash];
     }
 
     function COMMITMENTS(
         address _user,
         uint _index
     ) public view returns (DaDetails memory) {
-        return daDetails[userCommitments[_user][_index]];
+        bytes32 hash = Hashing.hashCommitment(userCommitments[_user][_index].X,userCommitments[_user][_index].Y);
+
+        return daDetails[hash];
     }
 
     function checkSign(
@@ -141,23 +149,23 @@ contract DomiconCommitment is Initializable, ISemver {
         uint64 _index,
         uint64 _length,
         bytes calldata _sign,
-        bytes calldata _commitment
+        Pairing.G1Point calldata _commitment
     ) internal view returns (bool) {
         bytes32 hash = Hashing.hashData(
-            _user,
             _target,
             _index,
             _length,
-            _commitment
+            _commitment.X,
+            _commitment.Y
         );
         return Hashing.verifySignature(hash, _sign, _user);
     }
 
-    function getGas(uint256 length) internal pure returns (uint256) {
-        return length;
+    function getGas(uint256 _length) internal pure returns (uint256) {
+        return _length;
     }
 
-    function SetDom(address addr) external {
-        DOM = addr;
+    function SetDom(address _addr) external {
+        DOM = _addr;
     }
 }

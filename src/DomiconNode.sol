@@ -24,7 +24,6 @@ contract DomiconNode is Initializable, ISemver {
         uint256 maxStorageSpace;
         address addr;
     }
-
     mapping(address => NodeInfo) public broadcastingNodes;
     address[] public broadcastNodeList;
     mapping(address => NodeInfo)  public storageNodes;
@@ -46,6 +45,7 @@ contract DomiconNode is Initializable, ISemver {
     }
 
     function RegisterBroadcastNode(NodeInfo calldata info) external {
+        require(info.addr==tx.origin);
         IERC20(DOM).safeTransferFrom(msg.sender, address(this), info.stakedTokens);
 
         broadcastNodeList.push(info.addr);

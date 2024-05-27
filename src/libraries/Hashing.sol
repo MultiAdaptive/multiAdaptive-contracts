@@ -5,11 +5,22 @@ pragma solidity ^0.8.0;
 /// @notice Hashing handles Domicon's various different hashing schemes.
 library Hashing {
 
-    /// @notice Used for computing the overall commitment state hash $r_i=H(cm_i||addr_i||r_{i-1})$
-    function hashCommitment(bytes calldata _commitment,address _target,bytes32 _committeeHash) internal pure returns(bytes32){
+
+    function hashCommitment(uint256 _x,uint256 _y) internal pure returns(bytes32){
         return keccak256(
             abi.encode(
-                _commitment,
+                _x,
+                _y
+            )
+        );
+    }
+
+    /// @notice Used for computing the overall commitment state hash $r_i=H(cm_i||addr_i||r_{i-1})$
+    function hashCommitmentRoot(uint256 _x,uint256 _y,address _target,bytes32 _committeeHash) internal pure returns(bytes32){
+        return keccak256(
+            abi.encode(
+                _x,
+                _y,
                 _target,
                 _committeeHash
             )
@@ -26,18 +37,18 @@ library Hashing {
     }
 
     /// @notice Used for generating a signature hash.
-    function hashData(address _user,address _submiter,uint64 _index,uint64 _length,bytes memory _commit) internal view returns (bytes32) {
+    function hashData(address _target,uint64 _index,uint64 _length,uint256 _x,uint256 _y) internal view returns (bytes32) {
         uint64 _chainId;
         assembly {
             _chainId := chainid()
         }
-        bytes memory data = abi.encodePacked(
+        bytes memory data = abi.encode(
             _chainId,
-            _user,
-            _submiter,
+            _target,
             _index,
             _length,
-            _commit
+            _x,
+            _y
         );
         return keccak256(data);
     }

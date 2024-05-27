@@ -20,6 +20,8 @@ import {L1ChugSplashProxy} from "src/legacy/L1ChugSplashProxy.sol";
 import {DomiconNode} from "src/DomiconNode.sol";
 import {DomiconCommitment} from "src/DomiconCommitment.sol";
 import {StorageManagement} from "src/StorageManagement.sol";
+import {ChallengeContract} from "src/ChallengeContract.sol";
+import {Verifier} from "src/kzg/Verifier.sol";
 import {StorageSetter} from "src/universal/StorageSetter.sol";
 import {Chains} from "script/Chains.sol";
 import {Config} from "script/Config.sol";
@@ -238,8 +240,6 @@ contract Deploy is Deployer {
 
     /// @notice
     function setupAdmin() public {
-        console.log("Setting up Admin");
-
         deployAddressManager();
         deployProxyAdmin();
         transferProxyAdminOwnership();
@@ -247,8 +247,6 @@ contract Deploy is Deployer {
 
     /// @notice Deploy contracts
     function setupContracts() public {
-        console.log("Deploying Contracts");
-
         // Ensure that the requisite contracts are deployed
         mustGetAddress("SystemOwnerSafe");
         mustGetAddress("AddressManager");
@@ -261,31 +259,29 @@ contract Deploy is Deployer {
 
     /// @notice Deploy all of the proxies
     function deployProxies() public {
-        console.log("Deploying proxies");
-
         deployERC1967Proxy("DomiconNodeProxy");
         deployERC1967Proxy("DomiconCommitmentProxy");
         deployERC1967Proxy("StorageManagementProxy");
+        deployERC1967Proxy("ChallengeContractProxy");
 
         //        transferAddressManagerOwnership(); // to the ProxyAdmin
     }
 
     /// @notice Deploy all of the implementations
     function deployImplementations() public {
-        console.log("Deploying implementations");
 
         deployDomiconNode();
         deployStorageManagement();
         deployDomiconCommitment();
+        deployChallengeContract();
     }
 
     /// @notice Initialize all of the implementations
     function initializeImplementations() public {
-        console.log("Initializing implementations");
-
         initializeDomiconNode();
         initializeStorageManagement();
         initializeDomiconCommitment();
+        initializeChallengeContract();
     }
 
     ////////////////////////////////////////////////////////////////
@@ -294,7 +290,6 @@ contract Deploy is Deployer {
 
     /// @notice Deploy the Safe
     function deploySafe() public broadcast returns (address addr_) {
-        console.log("Deploying Safe");
         (
             SafeProxyFactory safeProxyFactory,
             Safe safeSingleton
@@ -329,7 +324,6 @@ contract Deploy is Deployer {
 
     /// @notice Deploy the AddressManager
     function deployAddressManager() public broadcast returns (address addr_) {
-        console.log("Deploying AddressManager");
         AddressManager manager = new AddressManager();
         require(manager.owner() == msg.sender);
 
@@ -340,7 +334,6 @@ contract Deploy is Deployer {
 
     /// @notice Deploy the ProxyAdmin
     function deployProxyAdmin() public broadcast returns (address addr_) {
-        console.log("Deploying ProxyAdmin");
         ProxyAdmin admin = new ProxyAdmin({_owner: msg.sender});
         require(admin.owner() == msg.sender);
 
@@ -392,13 +385,14 @@ contract Deploy is Deployer {
         string memory _name,
         address _proxyOwner
     ) public broadcast returns (address addr_) {
-        console.log(string.concat("Deploying ERC1967 proxy for ", _name));
         Proxy proxy = new Proxy({_admin: _proxyOwner});
 
         require(EIP1967Helper.getAdmin(address(proxy)) == _proxyOwner);
 
         save(_name, address(proxy));
         addr_ = address(proxy);
+        console.log("%s deployed at %s",_name, address(addr_));
+
     }
 
     ////////////////////////////////////////////////////////////////
@@ -407,7 +401,6 @@ contract Deploy is Deployer {
 
     /// @notice Deploy the DomiconNode
     function deployDomiconNode() public broadcast returns (address addr_) {
-        console.log("Deploying DomiconNode implementation");
         DomiconNode node = new DomiconNode{salt: _implSalt()}();
 
         save("DomiconNode", address(node));
@@ -417,7 +410,6 @@ contract Deploy is Deployer {
     }
 
     function deployStorageManagement() public broadcast returns (address addr_) {
-        console.log("Deploying StorageManagement implementation");
         StorageManagement storageManagement = new StorageManagement{salt: _implSalt()}();
 
         save("StorageManagement", address(storageManagement));
@@ -436,9 +428,23 @@ contract Deploy is Deployer {
         DomiconCommitment comm = new DomiconCommitment{salt: _implSalt()}();
 
         save("DomiconCommitment", address(comm));
-        console.log("DomiconNode deployed at %s", address(comm));
+        console.log("DomiconCommitment deployed at %s", address(comm));
 
         addr_ = address(comm);
+    }
+
+    /// @notice Deploy the DomiconNode
+    function deployChallengeContract()
+    public
+    broadcast
+    returns (address addr_)
+    {
+        ChallengeContract chall = new ChallengeContract{salt: _implSalt()}();
+
+        save("ChallengeContract", address(chall));
+        console.log("ChallengeContract deployed at %s", address(chall));
+
+        addr_ = address(chall);
     }
 
     /// @notice Transfer ownership of the address manager to the ProxyAdmin
@@ -509,6 +515,25 @@ contract Deploy is Deployer {
             _innerCallData: abi.encodeCall(
                 DomiconCommitment.initialize,
                 (DomiconNode(domiconNodeProxy),StorageManagement(storageManagementProxy))
+            )
+        });
+    }
+
+    function initializeChallengeContract() public broadcast {
+        console.log("Upgrading and initializing ChallengeContract proxy");
+        address challengeContractProxy = mustGetAddress(
+            "ChallengeContractProxy"
+        );
+        address chall = mustGetAddress("ChallengeContract");
+        address domiconNodeProxy = mustGetAddress("DomiconNodeProxy");
+        address domiconCommitmentProxy = mustGetAddress("DomiconCommitmentProxy");
+
+        _upgradeAndCallViaSafe({
+            _proxy: payable(challengeContractProxy),
+            _implementation: chall,
+            _innerCallData: abi.encodeCall(
+                ChallengeContract.initialize,
+                (DomiconNode(domiconNodeProxy),DomiconCommitment(domiconCommitmentProxy))
             )
         });
     }
