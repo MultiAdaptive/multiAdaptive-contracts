@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -13,7 +14,7 @@ import {Hashing} from "src/libraries/Hashing.sol";
 import {Pairing} from "src/kzg/Pairing.sol";
 
 
-contract DomiconCommitment is Initializable, ISemver {
+contract DomiconCommitment is Initializable, ISemver,Ownable {
 
     struct DaDetails {
         uint timestamp;
@@ -68,6 +69,7 @@ contract DomiconCommitment is Initializable, ISemver {
     function initialize(DomiconNode _domiconNode,StorageManagement _storageManagement) public initializer {
         domiconNode = _domiconNode;
         storageManagement = _storageManagement;
+        _transferOwnership(tx.origin);
     }
 
     function SubmitCommitment(
@@ -102,7 +104,7 @@ contract DomiconCommitment is Initializable, ISemver {
 
         require(num >= info.requiredAmountOfSignatures, "DomiconCommitment:signature count mismatch");
 
-        IERC20(DOM).safeTransferFrom(tx.origin, address(this), getGas(_length));
+//        IERC20(DOM).safeTransferFrom(tx.origin, address(this), getGas(_length));
 
         committeeRoot = Hashing.hashCommitmentRoot(
             _commitment.X,
@@ -165,7 +167,7 @@ contract DomiconCommitment is Initializable, ISemver {
         return _length;
     }
 
-    function SetDom(address _addr) external {
+    function SetDom(address _addr) external onlyOwner {
         DOM = _addr;
     }
 }
