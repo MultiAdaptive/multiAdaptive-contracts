@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.15;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {ISemver} from "src/universal/ISemver.sol";
 import {DomiconNode} from "src/DomiconNode.sol";
@@ -61,6 +62,7 @@ contract ChallengeContract is Initializable, ISemver  {
     function initialize(DomiconNode _domiconNode,DomiconCommitment _domiconCommitment) public initializer {
         domiconNode = _domiconNode;
         domiconCommitment = _domiconCommitment;
+        _transferOwnership(tx.origin);
     }
 
 
@@ -208,7 +210,7 @@ contract ChallengeContract is Initializable, ISemver  {
         return domiconCommitment.getUserCommitments(_user,_index);
     }
 
-    function SetKZG(address _addr) external {
+    function SetKZG(address _addr) external onlyOwner {
         verifier = Verifier(_addr);
     }
 
