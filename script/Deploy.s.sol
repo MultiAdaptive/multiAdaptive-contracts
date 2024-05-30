@@ -1,34 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {VmSafe} from "forge-std/Vm.sol";
-import {Script} from "forge-std/Script.sol";
+import { VmSafe } from "forge-std/Vm.sol";
+import { Script } from "forge-std/Script.sol";
 
-import {console2 as console} from "forge-std/console2.sol";
-import {stdJson} from "forge-std/StdJson.sol";
+import { console2 as console } from "forge-std/console2.sol";
+import { stdJson } from "forge-std/StdJson.sol";
 
-import {Safe} from "safe-contracts/Safe.sol";
-import {SafeProxyFactory} from "safe-contracts/proxies/SafeProxyFactory.sol";
-import {Enum as SafeOps} from "safe-contracts/common/Enum.sol";
+import { Safe } from "safe-contracts/Safe.sol";
+import { SafeProxyFactory } from "safe-contracts/proxies/SafeProxyFactory.sol";
+import { Enum as SafeOps } from "safe-contracts/common/Enum.sol";
 
-import {Deployer} from "script/Deployer.sol";
+import { Deployer } from "script/Deployer.sol";
 
-import {ProxyAdmin} from "src/universal/ProxyAdmin.sol";
-import {AddressManager} from "src/legacy/AddressManager.sol";
-import {Proxy} from "src/universal/Proxy.sol";
-import {L1ChugSplashProxy} from "src/legacy/L1ChugSplashProxy.sol";
-import {NodeManager} from "src/NodeManager.sol";
-import {CommitmentManager} from "src/CommitmentManager.sol";
-import {StorageManager} from "src/StorageManager.sol";
-import {ChallengeContract} from "src/ChallengeContract.sol";
-import {Verifier} from "src/kzg/Verifier.sol";
-import {StorageSetter} from "src/universal/StorageSetter.sol";
-import {Chains} from "script/Chains.sol";
-import {Config} from "script/Config.sol";
+import { ProxyAdmin } from "src/universal/ProxyAdmin.sol";
+import { AddressManager } from "src/legacy/AddressManager.sol";
+import { Proxy } from "src/universal/Proxy.sol";
+import { L1ChugSplashProxy } from "src/legacy/L1ChugSplashProxy.sol";
+import { NodeManager } from "src/NodeManager.sol";
+import { CommitmentManager } from "src/CommitmentManager.sol";
+import { StorageManager } from "src/StorageManager.sol";
+import { ChallengeContract } from "src/ChallengeContract.sol";
+import { Verifier } from "src/kzg/Verifier.sol";
+import { StorageSetter } from "src/universal/StorageSetter.sol";
+import { Chains } from "script/Chains.sol";
+import { Config } from "script/Config.sol";
 
-import {LibStateDiff} from "script/libraries/LibStateDiff.sol";
-import {EIP1967Helper} from "test/mocks/EIP1967Helper.sol";
-import {ForgeArtifacts} from "script/ForgeArtifacts.sol";
+import { LibStateDiff } from "script/libraries/LibStateDiff.sol";
+import { EIP1967Helper } from "test/mocks/EIP1967Helper.sol";
+import { ForgeArtifacts } from "script/ForgeArtifacts.sol";
 
 /// @title Deploy
 /// @notice Script used to deploy a bedrock system. The entire system is deployed within the `run` function.
@@ -64,11 +64,7 @@ contract Deploy is Deployer {
     ///         testnet or devnet.
     modifier onlyTestnetOrDevnet() {
         uint256 chainid = block.chainid;
-        if (
-            chainid == Chains.Goerli ||
-            chainid == Chains.Sepolia ||
-            chainid == Chains.GethDevnet
-        ) {
+        if (chainid == Chains.Goerli || chainid == Chains.Sepolia || chainid == Chains.GethDevnet) {
             _;
         }
     }
@@ -80,19 +76,10 @@ contract Deploy is Deployer {
         vm.startStateDiffRecording();
         _;
         VmSafe.AccountAccess[] memory accesses = vm.stopAndReturnStateDiff();
-        console.log(
-            "Writing %d state diff account accesses to snapshots/state-diff/%s.json",
-            accesses.length,
-            name()
-        );
+        console.log("Writing %d state diff account accesses to snapshots/state-diff/%s.json", accesses.length, name());
         string memory json = LibStateDiff.encodeAccountAccesses(accesses);
-        string memory statediffPath = string.concat(
-            vm.projectRoot(),
-            "/snapshots/state-diff/",
-            name(),
-            ".json"
-        );
-        vm.writeJson({json: json, path: statediffPath});
+        string memory statediffPath = string.concat(vm.projectRoot(), "/snapshots/state-diff/", name(), ".json");
+        vm.writeJson({ json: json, path: statediffPath });
     }
 
     ////////////////////////////////////////////////////////////////
@@ -116,10 +103,7 @@ contract Deploy is Deployer {
     ////////////////////////////////////////////////////////////////
 
     /// @notice Gets the address of the SafeProxyFactory and Safe singleton for use in deploying a new GnosisSafe.
-    function _getSafeFactory()
-        internal
-        returns (SafeProxyFactory safeProxyFactory_, Safe safeSingleton_)
-    {
+    function _getSafeFactory() internal returns (SafeProxyFactory safeProxyFactory_, Safe safeSingleton_) {
         // These are the standard create2 deployed contracts. First we'll check if they are deployed,
         // if not we'll deploy new ones, though not at these addresses.
         address safeProxyFactory = 0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2;
@@ -129,9 +113,7 @@ contract Deploy is Deployer {
             ? safeProxyFactory_ = new SafeProxyFactory()
             : safeProxyFactory_ = SafeProxyFactory(safeProxyFactory);
 
-        safeSingleton.code.length == 0
-            ? safeSingleton_ = new Safe()
-            : safeSingleton_ = Safe(payable(safeSingleton));
+        safeSingleton.code.length == 0 ? safeSingleton_ = new Safe() : safeSingleton_ = Safe(payable(safeSingleton));
 
         save("SafeProxyFactory", address(safeProxyFactory_));
         save("SafeSingleton", address(safeSingleton_));
@@ -142,11 +124,7 @@ contract Deploy is Deployer {
         Safe safe = Safe(mustGetAddress("SystemOwnerSafe"));
 
         // This is the signature format used the caller is also the signer.
-        bytes memory signature = abi.encodePacked(
-            uint256(uint160(msg.sender)),
-            bytes32(0),
-            uint8(1)
-        );
+        bytes memory signature = abi.encodePacked(uint256(uint160(msg.sender)), bytes32(0), uint8(1));
 
         safe.execTransaction({
             to: _target,
@@ -163,19 +141,13 @@ contract Deploy is Deployer {
     }
 
     /// @notice Call from the Safe contract to the Proxy Admin's upgrade and call method
-    function _upgradeAndCallViaSafe(
-        address _proxy,
-        address _implementation,
-        bytes memory _innerCallData
-    ) internal {
+    function _upgradeAndCallViaSafe(address _proxy, address _implementation, bytes memory _innerCallData) internal {
         address proxyAdmin = mustGetAddress("ProxyAdmin");
 
-        bytes memory data = abi.encodeCall(
-            ProxyAdmin.upgradeAndCall,
-            (payable(_proxy), _implementation, _innerCallData)
-        );
+        bytes memory data =
+            abi.encodeCall(ProxyAdmin.upgradeAndCall, (payable(_proxy), _implementation, _innerCallData));
 
-        _callViaSafe({_target: proxyAdmin, _data: data});
+        _callViaSafe({ _target: proxyAdmin, _data: data });
     }
 
     /// @notice Transfer ownership of the ProxyAdmin contract to the final system owner
@@ -185,10 +157,7 @@ contract Deploy is Deployer {
         address safe = mustGetAddress("SystemOwnerSafe");
         if (owner != safe) {
             proxyAdmin.transferOwnership(safe);
-            console.log(
-                "ProxyAdmin ownership transferred to Safe at: %s",
-                safe
-            );
+            console.log("ProxyAdmin ownership transferred to Safe at: %s", safe);
         }
     }
 
@@ -200,11 +169,7 @@ contract Deploy is Deployer {
         Proxy proxy = Proxy(mustGetAddress(_name));
         address proxyAdmin = mustGetAddress("ProxyAdmin");
         proxy.changeAdmin(proxyAdmin);
-        console.log(
-            "Proxy %s ownership transferred to ProxyAdmin at: %s",
-            _name,
-            proxyAdmin
-        );
+        console.log("Proxy %s ownership transferred to ProxyAdmin at: %s", _name, proxyAdmin);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -269,7 +234,6 @@ contract Deploy is Deployer {
 
     /// @notice Deploy all of the implementations
     function deployImplementations() public {
-
         deployNodeManager();
         deployStorageManager();
         deployCommitmentManager();
@@ -290,32 +254,15 @@ contract Deploy is Deployer {
 
     /// @notice Deploy the Safe
     function deploySafe() public broadcast returns (address addr_) {
-        (
-            SafeProxyFactory safeProxyFactory,
-            Safe safeSingleton
-        ) = _getSafeFactory();
+        (SafeProxyFactory safeProxyFactory, Safe safeSingleton) = _getSafeFactory();
 
         address[] memory signers = new address[](1);
         signers[0] = msg.sender;
 
         bytes memory initData = abi.encodeWithSelector(
-        Safe.setup.selector,
-        signers,
-        1,
-        address(0),
-        hex"",
-    address(0),
-    address(0),
-        0,
-        address(0)
+            Safe.setup.selector, signers, 1, address(0), hex"", address(0), address(0), 0, address(0)
         );
-        address safe = address(
-            safeProxyFactory.createProxyWithNonce(
-                address(safeSingleton),
-                initData,
-                block.timestamp
-            )
-        );
+        address safe = address(safeProxyFactory.createProxyWithNonce(address(safeSingleton), initData, block.timestamp));
 
         save("SystemOwnerSafe", address(safe));
         console.log("New SystemOwnerSafe deployed at %s", address(safe));
@@ -337,9 +284,7 @@ contract Deploy is Deployer {
         ProxyAdmin admin = new ProxyAdmin({_owner: msg.sender});
         require(admin.owner() == msg.sender);
 
-        AddressManager addressManager = AddressManager(
-            mustGetAddress("AddressManager")
-        );
+        AddressManager addressManager = AddressManager(mustGetAddress("AddressManager"));
         if (admin.addressManager() != addressManager) {
             admin.setAddressManager(addressManager);
         }
@@ -368,13 +313,8 @@ contract Deploy is Deployer {
     /// @notice Deploys an ERC1967Proxy contract with the ProxyAdmin as the owner.
     /// @param _name The name of the proxy contract to be deployed.
     /// @return addr_ The address of the deployed proxy contract.
-    function deployERC1967Proxy(
-        string memory _name
-    ) public returns (address addr_) {
-        addr_ = deployERC1967ProxyWithOwner(
-            _name,
-            mustGetAddress("ProxyAdmin")
-        );
+    function deployERC1967Proxy(string memory _name) public returns (address addr_) {
+        addr_ = deployERC1967ProxyWithOwner(_name, mustGetAddress("ProxyAdmin"));
     }
 
     /// @notice Deploys an ERC1967Proxy contract with a specified owner.
@@ -384,15 +324,18 @@ contract Deploy is Deployer {
     function deployERC1967ProxyWithOwner(
         string memory _name,
         address _proxyOwner
-    ) public broadcast returns (address addr_) {
+    )
+        public
+        broadcast
+        returns (address addr_)
+    {
         Proxy proxy = new Proxy({_admin: _proxyOwner});
 
         require(EIP1967Helper.getAdmin(address(proxy)) == _proxyOwner);
 
         save(_name, address(proxy));
         addr_ = address(proxy);
-        console.log("%s deployed at %s",_name, address(addr_));
-
+        console.log("%s deployed at %s", _name, address(addr_));
     }
 
     ////////////////////////////////////////////////////////////////
@@ -419,11 +362,7 @@ contract Deploy is Deployer {
     }
 
     /// @notice Deploy the NodeManager
-    function deployCommitmentManager()
-    public
-    broadcast
-    returns (address addr_)
-    {
+    function deployCommitmentManager() public broadcast returns (address addr_) {
         console.log("Deploying CommitmentManager implementation");
         CommitmentManager comm = new CommitmentManager{salt: _implSalt()}();
 
@@ -434,11 +373,7 @@ contract Deploy is Deployer {
     }
 
     /// @notice Deploy the NodeManager
-    function deployChallengeContract()
-    public
-    broadcast
-    returns (address addr_)
-    {
+    function deployChallengeContract() public broadcast returns (address addr_) {
         ChallengeContract chall = new ChallengeContract{salt: _implSalt()}();
 
         save("ChallengeContract", address(chall));
@@ -450,17 +385,12 @@ contract Deploy is Deployer {
     /// @notice Transfer ownership of the address manager to the ProxyAdmin
     function transferAddressManagerOwnership() public broadcast {
         console.log("Transferring AddressManager ownership to ProxyAdmin");
-        AddressManager addressManager = AddressManager(
-            mustGetAddress("AddressManager")
-        );
+        AddressManager addressManager = AddressManager(mustGetAddress("AddressManager"));
         address owner = addressManager.owner();
         address proxyAdmin = mustGetAddress("ProxyAdmin");
         if (owner != proxyAdmin) {
             addressManager.transferOwnership(proxyAdmin);
-            console.log(
-                "AddressManager ownership transferred to %s",
-                proxyAdmin
-            );
+            console.log("AddressManager ownership transferred to %s", proxyAdmin);
         }
 
         require(addressManager.owner() == proxyAdmin);
@@ -484,27 +414,20 @@ contract Deploy is Deployer {
 
     function initializeStorageManager() public broadcast {
         console.log("Upgrading and initializing StorageManager proxy");
-        address storageManagementProxy = mustGetAddress(
-            "StorageManagerProxy"
-        );
+        address storageManagementProxy = mustGetAddress("StorageManagerProxy");
         address storageManagement = mustGetAddress("StorageManager");
         address nodeManagerProxy = mustGetAddress("NodeManagerProxy");
 
         _upgradeAndCallViaSafe({
             _proxy: payable(storageManagementProxy),
             _implementation: storageManagement,
-            _innerCallData: abi.encodeCall(
-                StorageManager.initialize,
-                (NodeManager(nodeManagerProxy))
-            )
+            _innerCallData: abi.encodeCall(StorageManager.initialize, (NodeManager(nodeManagerProxy)))
         });
     }
 
     function initializeCommitmentManager() public broadcast {
         console.log("Upgrading and initializing CommitmentManager proxy");
-        address commitmentManagerProxy = mustGetAddress(
-            "CommitmentManagerProxy"
-        );
+        address commitmentManagerProxy = mustGetAddress("CommitmentManagerProxy");
         address commitmentManager = mustGetAddress("CommitmentManager");
         address nodeManagerProxy = mustGetAddress("NodeManagerProxy");
         address storageManagementProxy = mustGetAddress("StorageManagerProxy");
@@ -513,17 +436,14 @@ contract Deploy is Deployer {
             _proxy: payable(commitmentManagerProxy),
             _implementation: commitmentManager,
             _innerCallData: abi.encodeCall(
-                CommitmentManager.initialize,
-                (NodeManager(nodeManagerProxy), StorageManager(storageManagementProxy))
-            )
+                CommitmentManager.initialize, (NodeManager(nodeManagerProxy), StorageManager(storageManagementProxy))
+                )
         });
     }
 
     function initializeChallengeContract() public broadcast {
         console.log("Upgrading and initializing ChallengeContract proxy");
-        address challengeContractProxy = mustGetAddress(
-            "ChallengeContractProxy"
-        );
+        address challengeContractProxy = mustGetAddress("ChallengeContractProxy");
         address chall = mustGetAddress("ChallengeContract");
         address nodeManagerProxy = mustGetAddress("NodeManagerProxy");
         address commitmentManagerProxy = mustGetAddress("CommitmentManagerProxy");
@@ -532,9 +452,8 @@ contract Deploy is Deployer {
             _proxy: payable(challengeContractProxy),
             _implementation: chall,
             _innerCallData: abi.encodeCall(
-                ChallengeContract.initialize,
-                (NodeManager(nodeManagerProxy), CommitmentManager(commitmentManagerProxy))
-            )
+                ChallengeContract.initialize, (NodeManager(nodeManagerProxy), CommitmentManager(commitmentManagerProxy))
+                )
         });
     }
 }

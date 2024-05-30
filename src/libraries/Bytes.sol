@@ -10,9 +10,7 @@ pragma solidity ^0.8.0;
 
 pragma solidity >=0.8.0 <0.9.0;
 
-
 library AssertBytes {
-
     /*
         Function: equal(bytes memory, bytes memory)
 
@@ -32,36 +30,35 @@ library AssertBytes {
         assembly {
             let length := mload(_a)
 
-        // if lengths don't match the arrays are not equal
+            // if lengths don't match the arrays are not equal
             switch eq(length, mload(_b))
             case 1 {
-            // cb is a circuit breaker in the for loop since there's
-            //  no said feature for inline assembly loops
-            // cb = 1 - don't breaker
-            // cb = 0 - break
+                // cb is a circuit breaker in the for loop since there's
+                //  no said feature for inline assembly loops
+                // cb = 1 - don't breaker
+                // cb = 0 - break
                 let cb := 1
 
                 let mc := add(_a, 0x20)
                 let end := add(mc, length)
 
-                for {
-                    let cc := add(_b, 0x20)
+                for { let cc := add(_b, 0x20) }
                 // the next line is the loop condition:
                 // while(uint256(mc < end) + cb == 2)
-                } eq(add(lt(mc, end), cb), 2) {
+                eq(add(lt(mc, end), cb), 2) {
                     mc := add(mc, 0x20)
                     cc := add(cc, 0x20)
                 } {
-                // if any of these checks fails then arrays are not equal
+                    // if any of these checks fails then arrays are not equal
                     if iszero(eq(mload(mc), mload(cc))) {
-                    // unsuccess:
+                        // unsuccess:
                         returnBool := 0
                         cb := 0
                     }
                 }
             }
             default {
-            // unsuccess:
+                // unsuccess:
                 returnBool := 0
             }
         }
@@ -91,20 +88,19 @@ library AssertBytes {
             result (bool) - The result.
     */
 
-
     function _equal_nonAligned(bytes memory _preBytes, bytes memory _postBytes) internal pure returns (bool) {
         bool success = true;
 
         assembly {
             let length := mload(_preBytes)
 
-        // if lengths don't match the arrays are not equal
+            // if lengths don't match the arrays are not equal
             switch eq(length, mload(_postBytes))
             case 1 {
-            // cb is a circuit breaker in the for loop since there's
-            //  no said feature for inline assembly loops
-            // cb = 1 - don't breaker
-            // cb = 0 - break
+                // cb is a circuit breaker in the for loop since there's
+                //  no said feature for inline assembly loops
+                // cb = 1 - don't breaker
+                // cb = 0 - break
                 let cb := 1
 
                 let endMinusWord := add(_preBytes, length)
@@ -112,37 +108,34 @@ library AssertBytes {
                 let cc := add(_postBytes, 0x20)
 
                 for {
-                // the next line is the loop condition:
-                // while(uint256(mc < endWord) + cb == 2)
+                    // the next line is the loop condition:
+                    // while(uint256(mc < endWord) + cb == 2)
                 } eq(add(lt(mc, endMinusWord), cb), 2) {
                     mc := add(mc, 0x20)
                     cc := add(cc, 0x20)
                 } {
-                // if any of these checks fails then arrays are not equal
+                    // if any of these checks fails then arrays are not equal
                     if iszero(eq(mload(mc), mload(cc))) {
-                    // unsuccess:
+                        // unsuccess:
                         success := 0
                         cb := 0
                     }
                 }
 
-            // Only if still successful
-            // For <1 word tail bytes
+                // Only if still successful
+                // For <1 word tail bytes
                 if gt(success, 0) {
-                // Get the remainder of length/32
-                // length % 32 = AND(length, 32 - 1)
+                    // Get the remainder of length/32
+                    // length % 32 = AND(length, 32 - 1)
                     let numTailBytes := and(length, 0x1f)
                     let mcRem := mload(mc)
                     let ccRem := mload(cc)
-                    for {
-                        let i := 0
+                    for { let i := 0 }
                     // the next line is the loop condition:
                     // while(uint256(i < numTailBytes) + cb == 2)
-                    } eq(add(lt(i, numTailBytes), cb), 2) {
-                        i := add(i, 1)
-                    } {
+                    eq(add(lt(i, numTailBytes), cb), 2) { i := add(i, 1) } {
                         if iszero(eq(byte(i, mcRem), byte(i, ccRem))) {
-                        // unsuccess:
+                            // unsuccess:
                             success := 0
                             cb := 0
                         }
@@ -150,7 +143,7 @@ library AssertBytes {
                 }
             }
             default {
-            // unsuccess:
+                // unsuccess:
                 success := 0
             }
         }
@@ -183,50 +176,50 @@ library AssertBytes {
         bool returnBool = true;
 
         assembly {
-        // we know _a_offset is 0
+            // we know _a_offset is 0
             let fslot := sload(_a.slot)
             let slength := div(and(fslot, sub(mul(0x100, iszero(and(fslot, 1))), 1)), 2)
             let mlength := mload(_b)
 
-        // if lengths don't match the arrays are not equal
+            // if lengths don't match the arrays are not equal
             switch eq(slength, mlength)
             case 1 {
-            // slength can contain both the length and contents of the array
-            // if length < 32 bytes so let's prepare for that
-            // v. http://solidity.readthedocs.io/en/latest/miscellaneous.html#layout-of-state-variables-in-storage
+                // slength can contain both the length and contents of the array
+                // if length < 32 bytes so let's prepare for that
+                // v. http://solidity.readthedocs.io/en/latest/miscellaneous.html#layout-of-state-variables-in-storage
                 if iszero(iszero(slength)) {
                     switch lt(slength, 32)
                     case 1 {
-                    // blank the last byte which is the length
+                        // blank the last byte which is the length
                         fslot := mul(div(fslot, 0x100), 0x100)
 
                         if iszero(eq(fslot, mload(add(_b, 0x20)))) {
-                        // unsuccess:
+                            // unsuccess:
                             returnBool := 0
                         }
                     }
                     default {
-                    // cb is a circuit breaker in the for loop since there's
-                    //  no said feature for inline assembly loops
-                    // cb = 1 - don't breaker
-                    // cb = 0 - break
+                        // cb is a circuit breaker in the for loop since there's
+                        //  no said feature for inline assembly loops
+                        // cb = 1 - don't breaker
+                        // cb = 0 - break
                         let cb := 1
 
-                    // get the keccak hash to get the contents of the array
+                        // get the keccak hash to get the contents of the array
                         mstore(0x0, _a.slot)
                         let sc := keccak256(0x0, 0x20)
 
                         let mc := add(_b, 0x20)
                         let end := add(mc, mlength)
 
-                    // the next line is the loop condition:
-                    // while(uint256(mc < end) + cb == 2)
-                        for {} eq(add(lt(mc, end), cb), 2) {
+                        // the next line is the loop condition:
+                        // while(uint256(mc < end) + cb == 2)
+                        for { } eq(add(lt(mc, end), cb), 2) {
                             sc := add(sc, 1)
                             mc := add(mc, 0x20)
                         } {
                             if iszero(eq(sload(sc), mload(mc))) {
-                            // unsuccess:
+                                // unsuccess:
                                 returnBool := 0
                                 cb := 0
                             }
@@ -235,7 +228,7 @@ library AssertBytes {
                 }
             }
             default {
-            // unsuccess:
+                // unsuccess:
                 returnBool := 0
             }
         }

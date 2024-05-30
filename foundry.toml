@@ -22,5 +22,8 @@ fs_permissions = [
   { access='read', path='./kout-deployment' }
 ]
 
-[etherscan]
-unknown_chain = { key = "Y4X6UASZNPTV57TJHD7Q7M5JE43T9AD515",chain = "mainnet", url = "https://api.etherscan.io/api" }
+[fmt]
+line_length=120
+multiline_func_header='all'
+bracket_spacing=true
+wrap_comments=true

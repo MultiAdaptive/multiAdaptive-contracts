@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import {ISemver} from "src/universal/ISemver.sol";
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import { ISemver } from "src/universal/ISemver.sol";
 
 contract NodeManager is Initializable, ISemver {
-
     /// @notice Semantic version.
     /// @custom:semver 0.1.0
     string public constant version = "0.1.0";
@@ -21,7 +20,7 @@ contract NodeManager is Initializable, ISemver {
 
     mapping(address => NodeInfo) public broadcastingNodes;
     address[] public broadcastNodeList;
-    mapping(address => NodeInfo)  public storageNodes;
+    mapping(address => NodeInfo) public storageNodes;
     address[] public storageNodeList;
 
     event BroadcastNode(address indexed add, string url, string name, uint256 stakedTokens);
@@ -29,14 +28,10 @@ contract NodeManager is Initializable, ISemver {
     event StorageNode(address indexed add, string url, string name, uint256 stakedTokens);
 
     /// @notice Constructs the NodeManager contract.
-    constructor() {
-
-    }
+    constructor() { }
 
     /// @notice Initializer
-    function initialize() public initializer {
-
-    }
+    function initialize() public initializer { }
 
     function RegisterBroadcastNode(NodeInfo calldata info) external payable {
         require(info.addr == tx.origin);
@@ -56,7 +51,7 @@ contract NodeManager is Initializable, ISemver {
         emit StorageNode(info.addr, info.url, info.name, info.stakedTokens);
     }
 
-    function IsNodeBroadcast(address addr) external view returns (bool){
+    function IsNodeBroadcast(address addr) external view returns (bool) {
         if (broadcastingNodes[addr].stakedTokens != 0) {
             return true;
         }

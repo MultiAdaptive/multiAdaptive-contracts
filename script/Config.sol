@@ -1,40 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Vm} from "forge-std/Vm.sol";
-import {Chains} from "script/Chains.sol";
+import { Vm } from "forge-std/Vm.sol";
+import { Chains } from "script/Chains.sol";
 
 /// @title Config
 /// @notice Contains all env var based config. Add any new env var parsing to this file
 ///         to ensure that all config is in a single place.
 library Config {
     /// @notice Foundry cheatcode VM.
-    Vm private constant vm =
-        Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+    Vm private constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     /// @notice Returns the path on the local filesystem where the deployment artifact is
     ///         written to disk after doing a deployment.
     function deploymentOutfile() internal view returns (string memory _env) {
-        _env = vm.envOr(
-            "DEPLOYMENT_OUTFILE",
-            string.concat(
-                vm.projectRoot(),
-                "/deployments",
-                "/.deploy"
-            )
-        );
+        _env = vm.envOr("DEPLOYMENT_OUTFILE", string.concat(vm.projectRoot(), "/deployments", "/.deploy"));
     }
 
     /// @notice Returns the path on the local filesystem where the deploy config is
     function deployConfigPath() internal view returns (string memory _env) {
         _env = vm.envOr(
-            "DEPLOY_CONFIG_PATH",
-            string.concat(
-                vm.projectRoot(),
-                "/deploy-config/",
-                _getDeploymentContext(),
-                ".json"
-            )
+            "DEPLOY_CONFIG_PATH", string.concat(vm.projectRoot(), "/deploy-config/", _getDeploymentContext(), ".json")
         );
     }
 
@@ -47,11 +33,7 @@ library Config {
     /// @notice Returns the value of the env var CONTRACT_ADDRESSES_PATH which is a JSON key/value
     ///         pair of contract names and their addresses. Each key/value pair is passed to `save`
     ///         which then backs the `getAddress` function.
-    function contractAddressesPath()
-        internal
-        view
-        returns (string memory _env)
-    {
+    function contractAddressesPath() internal view returns (string memory _env) {
         _env = vm.envOr("CONTRACT_ADDRESSES_PATH", string(""));
     }
 
@@ -68,19 +50,9 @@ library Config {
 
     /// @notice Returns the path that the state dump file should be written to or read from
     ///         on the local filesystem.
-    function stateDumpPath(
-        string memory _name
-    ) internal view returns (string memory _env) {
+    function stateDumpPath(string memory _name) internal view returns (string memory _env) {
         _env = vm.envOr(
-            "STATE_DUMP_PATH",
-            string.concat(
-                vm.projectRoot(),
-                "/",
-                _name,
-                "-",
-                vm.toString(block.chainid),
-                ".json"
-            )
+            "STATE_DUMP_PATH", string.concat(vm.projectRoot(), "/", _name, "-", vm.toString(block.chainid), ".json")
         );
     }
 
@@ -93,9 +65,7 @@ library Config {
     /// @notice Returns the name of the file that the forge deployment artifact is written to on the local
     ///         filesystem. By default, it is the name of the deploy script with the suffix `-latest.json`.
     ///         This was useful for creating hardhat deploy style artifacts and will be removed in a future release.
-    function deployFile(
-        string memory _sig
-    ) internal view returns (string memory _env) {
+    function deployFile(string memory _sig) internal view returns (string memory _env) {
         _env = vm.envOr("DEPLOY_FILE", string.concat(_sig, "-latest.json"));
     }
 

@@ -4,56 +4,62 @@ pragma solidity ^0.8.0;
 /// @title Hashing
 /// @notice Hashing handles MultiAdaptive's various different hashing schemes.
 library Hashing {
-
-
-    function hashCommitment(uint256 _x, uint256 _y) internal pure returns (bytes32){
-        return keccak256(
-            abi.encode(
-                _x,
-                _y
-            )
-        );
+    function hashCommitment(uint256 _x, uint256 _y) internal pure returns (bytes32) {
+        return keccak256(abi.encode(_x, _y));
     }
 
     /// @notice Used for computing the overall commitment state hash $r_i=H(cm_i||addr_i||r_{i-1})$
-    function hashCommitmentRoot(uint256 _x, uint256 _y, address _target, bytes32 _committeeHash) internal pure returns (bytes32){
-        return keccak256(
-            abi.encode(
-                _x,
-                _y,
-                _target,
-                _committeeHash
-            )
-        );
+    function hashCommitmentRoot(
+        uint256 _x,
+        uint256 _y,
+        address _target,
+        bytes32 _committeeHash
+    )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encode(_x, _y, _target, _committeeHash));
     }
 
     /// @notice Used for generating a hash corresponding to a set of broadcast node addresses
-    function hashAddresses(address _sender, uint _requiredAmountOfSignatures, address[] memory _addresses) internal pure returns (bytes32) {
+    function hashAddresses(
+        address _sender,
+        uint256 _requiredAmountOfSignatures,
+        address[] memory _addresses
+    )
+        internal
+        pure
+        returns (bytes32)
+    {
         return keccak256(abi.encode(_sender, _requiredAmountOfSignatures, _addresses));
     }
 
-    function hashSignatures(bytes[] calldata _signatures) internal pure returns (bytes32){
+    function hashSignatures(bytes[] calldata _signatures) internal pure returns (bytes32) {
         return keccak256(abi.encode(_signatures));
     }
 
     /// @notice Used for generating a signature hash.
-    function hashData(address _target, uint64 _index, uint64 _length, uint256 _x, uint256 _y) internal view returns (bytes32) {
+    function hashData(
+        address _target,
+        uint64 _index,
+        uint64 _length,
+        uint256 _x,
+        uint256 _y
+    )
+        internal
+        view
+        returns (bytes32)
+    {
         uint64 _chainId;
         assembly {
             _chainId := chainid()
         }
-        bytes memory data = abi.encode(
-            _chainId,
-            _target,
-            _index,
-            _length,
-            _x,
-            _y
-        );
+        bytes memory data = abi.encode(_chainId, _target, _index, _length, _x, _y);
         return keccak256(data);
     }
 
-    function hashFold(uint _r, uint _n) internal pure returns (bytes32) {
+    function hashFold(uint256 _r, uint256 _n) internal pure returns (bytes32) {
         return keccak256(abi.encode(_r, _n));
     }
 

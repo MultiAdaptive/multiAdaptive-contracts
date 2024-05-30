@@ -4,25 +4,20 @@ import "./Pairing.sol";
 import { Constants } from "./Constants.sol";
 
 contract Verifier is Constants {
-
     using Pairing for *;
 
     // The G1 generator
-    Pairing.G1Point SRS_G1_0 = Pairing.G1Point({
-        X: Constants.SRS_G1_X[0],
-        Y: Constants.SRS_G1_Y[0]
-    });
+    Pairing.G1Point SRS_G1_0 = Pairing.G1Point({ X: Constants.SRS_G1_X[0], Y: Constants.SRS_G1_Y[0] });
 
     // The G2 generator
     Pairing.G2Point g2Generator = Pairing.G2Point({
-        X: [ Constants.SRS_G2_X_0[0], Constants.SRS_G2_X_1[0] ],
-        Y: [ Constants.SRS_G2_Y_0[0], Constants.SRS_G2_Y_1[0] ]
-
+        X: [Constants.SRS_G2_X_0[0], Constants.SRS_G2_X_1[0]],
+        Y: [Constants.SRS_G2_Y_0[0], Constants.SRS_G2_Y_1[0]]
     });
 
     Pairing.G2Point SRS_G2_1 = Pairing.G2Point({
-        X: [ Constants.SRS_G2_X_0[1], Constants.SRS_G2_X_1[1] ],
-        Y: [ Constants.SRS_G2_Y_0[1], Constants.SRS_G2_Y_1[1] ]
+        X: [Constants.SRS_G2_X_0[1], Constants.SRS_G2_X_1[1]],
+        Y: [Constants.SRS_G2_Y_0[1], Constants.SRS_G2_Y_1[1]]
     });
 
     /*
@@ -45,7 +40,11 @@ contract Verifier is Constants {
         Pairing.G1Point memory _proof,
         uint256 _index,
         uint256 _value
-    ) public view returns (bool) {
+    )
+        public
+        view
+        returns (bool)
+    {
         // Make sure each parameter is less than the prime q
         require(_commitment.X < BABYJUB_P, "Verifier.verifyKZG: _commitment.X is out of range");
         require(_commitment.Y < BABYJUB_P, "Verifier.verifyKZG: _commitment.Y is out of range");
@@ -71,14 +70,9 @@ contract Verifier is Constants {
         //     e(commitment - aCommit, G2.g) * e(-proof, xCommit) * e(index * proof, G2.g) == 1
         //     e((index * proof) + (commitment - aCommit), G2.g) * e(-proof, xCommit) == 1
 
-
         // Compute commitment - aCommitment
-        Pairing.G1Point memory commitmentMinusA = Pairing.plus(
-            _commitment,
-            Pairing.negate(
-                Pairing.mulScalar(SRS_G1_0, _value)
-            )
-        );
+        Pairing.G1Point memory commitmentMinusA =
+            Pairing.plus(_commitment, Pairing.negate(Pairing.mulScalar(SRS_G1_0, _value)));
 
         // Negate the proof
         Pairing.G1Point memory negProof = Pairing.negate(_proof);
@@ -88,12 +82,7 @@ contract Verifier is Constants {
 
         // Returns true if and only if
         // e((index * proof) + (commitment - aCommitment), G2.g) * e(-proof, xCommit) == 1
-        return Pairing.pairing(
-            Pairing.plus(indexMulProof, commitmentMinusA),
-            g2Generator,
-            negProof,
-            SRS_G2_1
-        );
+        return Pairing.pairing(Pairing.plus(indexMulProof, commitmentMinusA), g2Generator, negProof, SRS_G2_1);
     }
 
     /*
@@ -101,21 +90,14 @@ contract Verifier is Constants {
      * @param coefficients The coefficients of the polynomial to which to
      *                     commit.
      */
-    function commit(
-        uint256[] memory coefficients
-    ) public view returns (Pairing.G1Point memory) {
-
+    function commit(uint256[] memory coefficients) public view returns (Pairing.G1Point memory) {
         Pairing.G1Point memory result = Pairing.G1Point(0, 0);
 
-        for (uint256 i = 0; i < coefficients.length; i ++) {
+        for (uint256 i = 0; i < coefficients.length; i++) {
             result = Pairing.plus(
                 result,
                 Pairing.mulScalar(
-                    Pairing.G1Point({
-                        X: Constants.SRS_G1_X[i],
-                        Y: Constants.SRS_G1_Y[i]
-                    }),
-                    coefficients[i]
+                    Pairing.G1Point({ X: Constants.SRS_G1_X[i], Y: Constants.SRS_G1_Y[i] }), coefficients[i]
                 )
             );
         }
@@ -126,19 +108,15 @@ contract Verifier is Constants {
      * @return The polynominal evaluation of a polynominal with the specified
      *         coefficients at the given index.
      */
-    function evalPolyAt(
-        uint256[] memory _coefficients,
-        uint256 _index
-    ) public pure returns (uint256) {
-
+    function evalPolyAt(uint256[] memory _coefficients, uint256 _index) public pure returns (uint256) {
         uint256 m = Constants.BABYJUB_P;
         uint256 result = 0;
         uint256 powerOfX = 1;
 
-        for (uint256 i = 0; i < _coefficients.length; i ++) {
+        for (uint256 i = 0; i < _coefficients.length; i++) {
             uint256 coeff = _coefficients[i];
             assembly {
-                result:= addmod(result, mulmod(powerOfX, coeff, m), m)
+                result := addmod(result, mulmod(powerOfX, coeff, m), m)
                 powerOfX := mulmod(powerOfX, _index, m)
             }
         }
@@ -171,7 +149,11 @@ contract Verifier is Constants {
         uint256[] memory _values,
         uint256[] memory _iCoeffs,
         uint256[] memory _zCoeffs
-    ) public view returns (bool) {
+    )
+        public
+        view
+        returns (bool)
+    {
         // Perform range checks
         require(_commitment.X < BABYJUB_P, "Verifier.verifyMultiKZG: _commitment.X is out of range");
         require(_commitment.Y < BABYJUB_P, "Verifier.verifyMultiKZG: _commitment.Y is out of range");
@@ -180,16 +162,16 @@ contract Verifier is Constants {
         require(_proof.Y[0] < BABYJUB_P, "Verifier.verifyKZG: _proof.Y[0] is out of range");
         require(_proof.Y[1] < BABYJUB_P, "Verifier.verifyKZG: _proof.Y[1] is out of range");
 
-        for (uint256 i = 0; i < _iCoeffs.length; i ++) {
+        for (uint256 i = 0; i < _iCoeffs.length; i++) {
             require(_iCoeffs[i] < BABYJUB_P, "Verifier.verifyKZG: an _iCoeffs value is out of range");
         }
 
-        for (uint256 i = 0; i < _zCoeffs.length; i ++) {
+        for (uint256 i = 0; i < _zCoeffs.length; i++) {
             require(_zCoeffs[i] < BABYJUB_P, "Verifier.verifyKZG: an _zCoeffs value is out of range");
         }
 
         // Check whether _iCoeffs and _zCoeffs are valid
-        for (uint256 i = 0; i < _indices.length; i ++) {
+        for (uint256 i = 0; i < _indices.length; i++) {
             uint256 index = _indices[i];
             uint256 value = _values[i];
             require(index < BABYJUB_P, "Verifier.verifyKZG: an index is out of range");
@@ -207,19 +189,10 @@ contract Verifier is Constants {
         Pairing.G1Point memory iCommit = commit(_iCoeffs);
 
         // Compute commitment - commit(iPoly)
-        Pairing.G1Point memory commitmentMinusICommit =
-                            Pairing.plus(
-                _commitment,
-                Pairing.negate(iCommit)
-            );
+        Pairing.G1Point memory commitmentMinusICommit = Pairing.plus(_commitment, Pairing.negate(iCommit));
 
         // Perform the pairing check
-        return Pairing.pairing(
-            Pairing.negate(zCommit),
-            _proof,
-            commitmentMinusICommit,
-            g2Generator
-        );
+        return Pairing.pairing(Pairing.negate(zCommit), _proof, commitmentMinusICommit, g2Generator);
     }
 
     /*

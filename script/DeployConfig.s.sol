@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import {Script} from "forge-std/Script.sol";
-import {console2 as console} from "forge-std/console2.sol";
-import {stdJson} from "forge-std/StdJson.sol";
-import {Executables} from "script/Executables.sol";
-import {Chains} from "script/Chains.sol";
+import { Script } from "forge-std/Script.sol";
+import { console2 as console } from "forge-std/console2.sol";
+import { stdJson } from "forge-std/StdJson.sol";
+import { Executables } from "script/Executables.sol";
+import { Chains } from "script/Chains.sol";
 
 // Global constant for the `useFaultProofs` slot in the DeployConfig contract, which can be overridden in the testing
 // environment.
@@ -25,12 +25,8 @@ contract DeployConfig is Script {
         try vm.readFile(_path) returns (string memory data) {
             _json = data;
         } catch {
-            require(
-                false,
-                string.concat("Cannot find deploy config file at ", _path)
-            );
+            require(false, string.concat("Cannot find deploy config file at ", _path));
         }
-
 
         l1ChainID = stdJson.readUint(_json, "$.l1ChainID");
     }

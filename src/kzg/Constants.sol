@@ -21,7 +21,8 @@ import "./Pairing.sol";
  * file have not been tampered with. Moreover, as long as one participant in
  * the ceremony has discarded their toxic waste, the whole ceremony is secure.
  * Please read the following for more information:
- * https://medium.com/coinmonks/announcing-the-perpetual-powers-of-tau-ceremony-to-benefit-all-zk-snark-projects-c3da86af8377
+*
+https://medium.com/coinmonks/announcing-the-perpetual-powers-of-tau-ceremony-to-benefit-all-zk-snark-projects-c3da86af8377
  */
 
 contract Constants {

@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 
 library Pairing {
-
     uint256 constant PRIME_Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
 
     struct G1Point {
@@ -19,7 +18,6 @@ library Pairing {
      * @return The negation of p, i.e. p.plus(p.negate()) should be zero. 
      */
     function negate(G1Point memory p) internal pure returns (G1Point memory) {
-
         // The prime q in the base field F_q for G1
         if (p.X == 0 && p.Y == 0) {
             return G1Point(0, 0);
@@ -31,11 +29,7 @@ library Pairing {
     /*
      * @return The sum of two points of G1
      */
-    function plus(
-        G1Point memory p1,
-        G1Point memory p2
-    ) internal view returns (G1Point memory r) {
-
+    function plus(G1Point memory p1, G1Point memory p2) internal view returns (G1Point memory r) {
         uint256[4] memory input;
         input[0] = p1.X;
         input[1] = p1.Y;
@@ -47,7 +41,8 @@ library Pairing {
         assembly {
             success := staticcall(sub(gas(), 2000), 6, input, 0xc0, r, 0x60)
             // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            switch success
+            case 0 { invalid() }
         }
 
         require(success, "pairing-add-failed");
@@ -59,7 +54,6 @@ library Pairing {
      *         points p.
      */
     function mulScalar(G1Point memory p, uint256 s) internal view returns (G1Point memory r) {
-
         uint256[3] memory input;
         input[0] = p.X;
         input[1] = p.Y;
@@ -69,9 +63,10 @@ library Pairing {
         assembly {
             success := staticcall(sub(gas(), 2000), 7, input, 0x80, r, 0x60)
             // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            switch success
+            case 0 { invalid() }
         }
-        require (success, "pairing-mul-failed");
+        require(success, "pairing-mul-failed");
     }
 
     /* @return The result of computing the pairing check
@@ -84,8 +79,11 @@ library Pairing {
         G2Point memory a2,
         G1Point memory b1,
         G2Point memory b2
-    ) internal view returns (bool) {
-
+    )
+        internal
+        view
+        returns (bool)
+    {
         G1Point[2] memory p1 = [a1, b1];
         G2Point[2] memory p2 = [a2, b2];
 
@@ -109,7 +107,8 @@ library Pairing {
         assembly {
             success := staticcall(sub(gas(), 2000), 8, add(input, 0x20), mul(inputSize, 0x20), out, 0x20)
             // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            switch success
+            case 0 { invalid() }
         }
 
         require(success, "pairing-opcode-failed");
@@ -117,9 +116,7 @@ library Pairing {
         return out[0] != 0;
     }
 
-    function equal(G1Point memory a1,G1Point memory b1) internal pure returns(bool){
+    function equal(G1Point memory a1, G1Point memory b1) internal pure returns (bool) {
         return a1.X == b1.X && a1.Y == b1.Y;
     }
 }
-
-
