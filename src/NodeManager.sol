@@ -57,4 +57,11 @@ contract NodeManager is Initializable, ISemver {
         }
         return false;
     }
+
+    function IsNodeStorage(address addr) external view returns (bool) {
+        if (storageNodes[addr].stakedTokens != 0) {
+            return true;
+        }
+        return false;
+    }
 }
