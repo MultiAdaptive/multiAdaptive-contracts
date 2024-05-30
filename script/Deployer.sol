@@ -11,11 +11,11 @@ import {DeployConfig} from "script/DeployConfig.s.sol";
 /// @notice A contract that can make deploying and interacting with deployments easy.
 abstract contract Deployer is Script, Artifacts {
     DeployConfig public constant cfg =
-        DeployConfig(
-            address(
-                uint160(uint256(keccak256(abi.encode("Domicon.deployconfig"))))
-            )
-        );
+    DeployConfig(
+        address(
+            uint160(uint256(keccak256(abi.encode("MultiAdaptive.deployconfig"))))
+        )
+    );
 
     /// @notice Sets up the artifacts contract.
     function setUp() public virtual override {

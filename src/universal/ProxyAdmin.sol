@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Proxy } from "src/universal/Proxy.sol";
-import { AddressManager } from "src/legacy/AddressManager.sol";
-import { L1ChugSplashProxy } from "src/legacy/L1ChugSplashProxy.sol";
-import { Constants } from "src/libraries/Constants.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Proxy} from "src/universal/Proxy.sol";
+import {AddressManager} from "src/legacy/AddressManager.sol";
+import {L1ChugSplashProxy} from "src/legacy/L1ChugSplashProxy.sol";
+import {Constants} from "src/libraries/Constants.sol";
 
 /// @title IStaticERC1967Proxy
 /// @notice IStaticERC1967Proxy is a static version of the ERC1967 proxy interface.
@@ -26,7 +26,7 @@ interface IStaticL1ChugSplashProxy {
 /// @title ProxyAdmin
 /// @notice This is an auxiliary contract meant to be assigned as the admin of an ERC1967 Proxy,
 ///         based on the OpenZeppelin implementation. It has backwards compatibility logic to work
-///         with the various types of proxies that have been deployed by Domicon in the past.
+///         with the various types of proxies that have been deployed by MultiAdaptive in the past.
 contract ProxyAdmin is Ownable {
     /// @notice The proxy types that the ProxyAdmin can manage.
     /// @custom:value ERC1967    Represents an ERC1967 compliant transparent proxy interface.
@@ -186,17 +186,17 @@ contract ProxyAdmin is Ownable {
         address _implementation,
         bytes memory _data
     )
-        external
-        payable
-        onlyOwner
+    external
+    payable
+    onlyOwner
     {
         ProxyType ptype = proxyType[_proxy];
         if (ptype == ProxyType.ERC1967) {
-            Proxy(_proxy).upgradeToAndCall{ value: msg.value }(_implementation, _data);
+            Proxy(_proxy).upgradeToAndCall{value: msg.value}(_implementation, _data);
         } else {
             // reverts if proxy type is unknown
             upgrade(_proxy, _implementation);
-            (bool success,) = _proxy.call{ value: msg.value }(_data);
+            (bool success,) = _proxy.call{value: msg.value}(_data);
             require(success, "ProxyAdmin: call to proxy after upgrade failed");
         }
     }

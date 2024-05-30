@@ -17,9 +17,9 @@ import {ProxyAdmin} from "src/universal/ProxyAdmin.sol";
 import {AddressManager} from "src/legacy/AddressManager.sol";
 import {Proxy} from "src/universal/Proxy.sol";
 import {L1ChugSplashProxy} from "src/legacy/L1ChugSplashProxy.sol";
-import {DomiconNode} from "src/DomiconNode.sol";
-import {DomiconCommitment} from "src/DomiconCommitment.sol";
-import {StorageManagement} from "src/StorageManagement.sol";
+import {NodeManager} from "src/NodeManager.sol";
+import {CommitmentManager} from "src/CommitmentManager.sol";
+import {StorageManager} from "src/StorageManager.sol";
 import {ChallengeContract} from "src/ChallengeContract.sol";
 import {Verifier} from "src/kzg/Verifier.sol";
 import {StorageSetter} from "src/universal/StorageSetter.sol";
@@ -259,9 +259,9 @@ contract Deploy is Deployer {
 
     /// @notice Deploy all of the proxies
     function deployProxies() public {
-        deployERC1967Proxy("DomiconNodeProxy");
-        deployERC1967Proxy("DomiconCommitmentProxy");
-        deployERC1967Proxy("StorageManagementProxy");
+        deployERC1967Proxy("NodeManagerProxy");
+        deployERC1967Proxy("CommitmentManagerProxy");
+        deployERC1967Proxy("StorageManagerProxy");
         deployERC1967Proxy("ChallengeContractProxy");
 
         //        transferAddressManagerOwnership(); // to the ProxyAdmin
@@ -270,17 +270,17 @@ contract Deploy is Deployer {
     /// @notice Deploy all of the implementations
     function deployImplementations() public {
 
-        deployDomiconNode();
-        deployStorageManagement();
-        deployDomiconCommitment();
+        deployNodeManager();
+        deployStorageManager();
+        deployCommitmentManager();
         deployChallengeContract();
     }
 
     /// @notice Initialize all of the implementations
     function initializeImplementations() public {
-        initializeDomiconNode();
-        initializeStorageManagement();
-        initializeDomiconCommitment();
+        initializeNodeManager();
+        initializeStorageManager();
+        initializeCommitmentManager();
         initializeChallengeContract();
     }
 
@@ -399,41 +399,41 @@ contract Deploy is Deployer {
     //             Implementation Deployment Functions            //
     ////////////////////////////////////////////////////////////////
 
-    /// @notice Deploy the DomiconNode
-    function deployDomiconNode() public broadcast returns (address addr_) {
-        DomiconNode node = new DomiconNode{salt: _implSalt()}();
+    /// @notice Deploy the NodeManager
+    function deployNodeManager() public broadcast returns (address addr_) {
+        NodeManager node = new NodeManager{salt: _implSalt()}();
 
-        save("DomiconNode", address(node));
-        console.log("DomiconNode deployed at %s", address(node));
+        save("NodeManager", address(node));
+        console.log("NodeManager deployed at %s", address(node));
 
         addr_ = address(node);
     }
 
-    function deployStorageManagement() public broadcast returns (address addr_) {
-        StorageManagement storageManagement = new StorageManagement{salt: _implSalt()}();
+    function deployStorageManager() public broadcast returns (address addr_) {
+        StorageManager storageManagement = new StorageManager{salt: _implSalt()}();
 
-        save("StorageManagement", address(storageManagement));
-        console.log("StorageManagement deployed at %s", address(storageManagement));
+        save("StorageManager", address(storageManagement));
+        console.log("StorageManager deployed at %s", address(storageManagement));
 
         addr_ = address(storageManagement);
     }
 
-    /// @notice Deploy the DomiconNode
-    function deployDomiconCommitment()
+    /// @notice Deploy the NodeManager
+    function deployCommitmentManager()
     public
     broadcast
     returns (address addr_)
     {
-        console.log("Deploying DomiconCommitment implementation");
-        DomiconCommitment comm = new DomiconCommitment{salt: _implSalt()}();
+        console.log("Deploying CommitmentManager implementation");
+        CommitmentManager comm = new CommitmentManager{salt: _implSalt()}();
 
-        save("DomiconCommitment", address(comm));
-        console.log("DomiconCommitment deployed at %s", address(comm));
+        save("CommitmentManager", address(comm));
+        console.log("CommitmentManager deployed at %s", address(comm));
 
         addr_ = address(comm);
     }
 
-    /// @notice Deploy the DomiconNode
+    /// @notice Deploy the NodeManager
     function deployChallengeContract()
     public
     broadcast
@@ -470,51 +470,51 @@ contract Deploy is Deployer {
     //                    Initialize Functions                    //
     ////////////////////////////////////////////////////////////////
 
-    function initializeDomiconNode() public broadcast {
-        console.log("Upgrading and initializing DomiconNode proxy");
-        address domiconNodeProxy = mustGetAddress("DomiconNodeProxy");
-        address domiconNode = mustGetAddress("DomiconNode");
+    function initializeNodeManager() public broadcast {
+        console.log("Upgrading and initializing NodeManager proxy");
+        address nodeManagerProxy = mustGetAddress("NodeManagerProxy");
+        address nodeManager = mustGetAddress("NodeManager");
 
         _upgradeAndCallViaSafe({
-            _proxy: payable(domiconNodeProxy),
-            _implementation: domiconNode,
-            _innerCallData: abi.encodeCall(DomiconNode.initialize, ())
+            _proxy: payable(nodeManagerProxy),
+            _implementation: nodeManager,
+            _innerCallData: abi.encodeCall(NodeManager.initialize, ())
         });
     }
 
-    function initializeStorageManagement() public broadcast {
-        console.log("Upgrading and initializing StorageManagement proxy");
+    function initializeStorageManager() public broadcast {
+        console.log("Upgrading and initializing StorageManager proxy");
         address storageManagementProxy = mustGetAddress(
-            "StorageManagementProxy"
+            "StorageManagerProxy"
         );
-        address storageManagement = mustGetAddress("StorageManagement");
-        address domiconNodeProxy = mustGetAddress("DomiconNodeProxy");
+        address storageManagement = mustGetAddress("StorageManager");
+        address nodeManagerProxy = mustGetAddress("NodeManagerProxy");
 
         _upgradeAndCallViaSafe({
             _proxy: payable(storageManagementProxy),
             _implementation: storageManagement,
             _innerCallData: abi.encodeCall(
-                StorageManagement.initialize,
-                (DomiconNode(domiconNodeProxy))
+                StorageManager.initialize,
+                (NodeManager(nodeManagerProxy))
             )
         });
     }
 
-    function initializeDomiconCommitment() public broadcast {
-        console.log("Upgrading and initializing DomiconCommitment proxy");
-        address domiconCommitmentProxy = mustGetAddress(
-            "DomiconCommitmentProxy"
+    function initializeCommitmentManager() public broadcast {
+        console.log("Upgrading and initializing CommitmentManager proxy");
+        address commitmentManagerProxy = mustGetAddress(
+            "CommitmentManagerProxy"
         );
-        address domiconCommitment = mustGetAddress("DomiconCommitment");
-        address domiconNodeProxy = mustGetAddress("DomiconNodeProxy");
-        address storageManagementProxy = mustGetAddress("StorageManagementProxy");
+        address commitmentManager = mustGetAddress("CommitmentManager");
+        address nodeManagerProxy = mustGetAddress("NodeManagerProxy");
+        address storageManagementProxy = mustGetAddress("StorageManagerProxy");
 
         _upgradeAndCallViaSafe({
-            _proxy: payable(domiconCommitmentProxy),
-            _implementation: domiconCommitment,
+            _proxy: payable(commitmentManagerProxy),
+            _implementation: commitmentManager,
             _innerCallData: abi.encodeCall(
-                DomiconCommitment.initialize,
-                (DomiconNode(domiconNodeProxy),StorageManagement(storageManagementProxy))
+                CommitmentManager.initialize,
+                (NodeManager(nodeManagerProxy), StorageManager(storageManagementProxy))
             )
         });
     }
@@ -525,15 +525,15 @@ contract Deploy is Deployer {
             "ChallengeContractProxy"
         );
         address chall = mustGetAddress("ChallengeContract");
-        address domiconNodeProxy = mustGetAddress("DomiconNodeProxy");
-        address domiconCommitmentProxy = mustGetAddress("DomiconCommitmentProxy");
+        address nodeManagerProxy = mustGetAddress("NodeManagerProxy");
+        address commitmentManagerProxy = mustGetAddress("CommitmentManagerProxy");
 
         _upgradeAndCallViaSafe({
             _proxy: payable(challengeContractProxy),
             _implementation: chall,
             _innerCallData: abi.encodeCall(
                 ChallengeContract.initialize,
-                (DomiconNode(domiconNodeProxy),DomiconCommitment(domiconCommitmentProxy))
+                (NodeManager(nodeManagerProxy), CommitmentManager(commitmentManagerProxy))
             )
         });
     }

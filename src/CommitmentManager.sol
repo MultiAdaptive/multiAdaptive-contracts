@@ -1,27 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ISemver} from "src/universal/ISemver.sol";
-import {DomiconNode} from "src/DomiconNode.sol";
-import {DomiconNode} from "src/DomiconNode.sol";
-import {StorageManagement,DasKeySetInfo} from "src/StorageManagement.sol";
+import {NodeManager} from "src/NodeManager.sol";
+import {StorageManager, NodeGroup} from "src/StorageManager.sol";
 import {Hashing} from "src/libraries/Hashing.sol";
 import {Pairing} from "src/kzg/Pairing.sol";
 
 
-contract DomiconCommitment is Initializable, ISemver,Ownable {
+contract CommitmentManager is Initializable, ISemver {
 
     struct DaDetails {
         uint timestamp;
         bytes32 hashSignatures;
     }
-
-    using SafeERC20 for IERC20;
 
     /// @notice Semantic version.
     /// @custom:semver 0.1.0
@@ -29,13 +23,11 @@ contract DomiconCommitment is Initializable, ISemver,Ownable {
 
     bytes32 public committeeRoot;
 
-    address public DOM;
-
     uint public nonce;
 
-    DomiconNode public domiconNode;
+    NodeManager public nodeManager;
 
-    StorageManagement public storageManagement;
+    StorageManager public storageManagement;
 
     mapping(address => mapping(uint256 => Pairing.G1Point)) public userCommitments;
     mapping(address => uint256) public indices;
@@ -56,20 +48,19 @@ contract DomiconCommitment is Initializable, ISemver,Ownable {
 
     modifier onlyBroadcastNode() {
         require(
-            domiconNode.IsNodeBroadcast(msg.sender),
-            "DomiconCommitment: broadcast node address error"
+            nodeManager.IsNodeBroadcast(msg.sender),
+            "CommitmentManager: broadcast node address error"
         );
         _;
     }
 
-    /// @notice Constructs the DomiconCommitment contract.
+    /// @notice Constructs the CommitmentManager contract.
     constructor() {}
 
     /// @notice Initializer
-    function initialize(DomiconNode _domiconNode,StorageManagement _storageManagement) public initializer {
-        domiconNode = _domiconNode;
+    function initialize(NodeManager _nodeManager, StorageManager _storageManagement) public initializer {
+        nodeManager = _nodeManager;
         storageManagement = _storageManagement;
-        _transferOwnership(tx.origin);
     }
 
     function SubmitCommitment(
@@ -78,22 +69,22 @@ contract DomiconCommitment is Initializable, ISemver,Ownable {
         bytes32 _dasKey,
         bytes[] calldata _signatures,
         Pairing.G1Point calldata _commitment
-    ) external {
+    ) external payable {
 
-        DasKeySetInfo memory info = storageManagement.DASKEYSETINFO(_dasKey);
+        NodeGroup memory info = storageManagement.DASKEYSETINFO(_dasKey);
         require(
             info.addrs.length > 0,
-            "DomiconCommitment:key does not exist"
+            "CommitmentManager:key does not exist"
         );
         require(
             info.addrs.length == _signatures.length,
-            "DomiconCommitment:mismatchedSignaturesCount"
+            "CommitmentManager:mismatchedSignaturesCount"
         );
-        require(indices[tx.origin] == _index, "DomiconCommitment:index error");
+        require(indices[tx.origin] == _index, "CommitmentManager:index error");
 
         uint num;
         for (uint256 i = 0; i < _signatures.length; i++) {
-            if (!domiconNode.IsNodeBroadcast(info.addrs[i])) {
+            if (!nodeManager.IsNodeBroadcast(info.addrs[i])) {
                 continue;
             }
 
@@ -102,9 +93,7 @@ contract DomiconCommitment is Initializable, ISemver,Ownable {
             }
         }
 
-        require(num >= info.requiredAmountOfSignatures, "DomiconCommitment:signature count mismatch");
-
-//        IERC20(DOM).safeTransferFrom(tx.origin, address(this), getGas(_length));
+        require(num >= info.requiredAmountOfSignatures, "CommitmentManager:signature count mismatch");
 
         committeeRoot = Hashing.hashCommitmentRoot(
             _commitment.X,
@@ -113,9 +102,9 @@ contract DomiconCommitment is Initializable, ISemver,Ownable {
             committeeRoot
         );
 
-        emit SendDACommitment(tx.origin,_commitment,block.timestamp,nonce,_index,_length,committeeRoot,_dasKey,_signatures);
+        emit SendDACommitment(tx.origin, _commitment, block.timestamp, nonce, _index, _length, committeeRoot, _dasKey, _signatures);
 
-        bytes32 hash = Hashing.hashCommitment(_commitment.X,_commitment.Y);
+        bytes32 hash = Hashing.hashCommitment(_commitment.X, _commitment.Y);
 
         daDetails[hash] = DaDetails({
             timestamp: block.timestamp,
@@ -127,12 +116,12 @@ contract DomiconCommitment is Initializable, ISemver,Ownable {
         nonce++;
     }
 
-    function getUserCommitments(address _user,uint _index) public view returns(Pairing.G1Point memory){
+    function getUserCommitments(address _user, uint _index) public view returns (Pairing.G1Point memory){
         return userCommitments[_user][_index];
     }
 
     function COMMITMENTS(uint _nonce) public view returns (DaDetails memory) {
-        bytes32 hash = Hashing.hashCommitment(commitments[_nonce].X,commitments[_nonce].Y);
+        bytes32 hash = Hashing.hashCommitment(commitments[_nonce].X, commitments[_nonce].Y);
         return daDetails[hash];
     }
 
@@ -140,7 +129,7 @@ contract DomiconCommitment is Initializable, ISemver,Ownable {
         address _user,
         uint _index
     ) public view returns (DaDetails memory) {
-        bytes32 hash = Hashing.hashCommitment(userCommitments[_user][_index].X,userCommitments[_user][_index].Y);
+        bytes32 hash = Hashing.hashCommitment(userCommitments[_user][_index].X, userCommitments[_user][_index].Y);
 
         return daDetails[hash];
     }
@@ -165,9 +154,5 @@ contract DomiconCommitment is Initializable, ISemver,Ownable {
 
     function getGas(uint256 _length) internal pure returns (uint256) {
         return _length;
-    }
-
-    function SetDom(address _addr) external onlyOwner {
-        DOM = _addr;
     }
 }

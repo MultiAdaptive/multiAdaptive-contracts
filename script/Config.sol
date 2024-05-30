@@ -63,7 +63,7 @@ library Config {
 
     /// @notice The CREATE2 salt to be used when deploying the implementations.
     function implSalt() internal view returns (string memory _env) {
-        _env = vm.envOr("IMPL_SALT", string("ether 0513s"));
+        _env = vm.envOr("IMPL_SALT", string("ether 0527C"));
     }
 
     /// @notice Returns the path that the state dump file should be written to or read from
