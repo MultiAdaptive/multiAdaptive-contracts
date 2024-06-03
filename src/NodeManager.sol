@@ -52,16 +52,10 @@ contract NodeManager is Initializable, ISemver {
     }
 
     function IsNodeBroadcast(address addr) external view returns (bool) {
-        if (broadcastingNodes[addr].stakedTokens != 0) {
-            return true;
-        }
-        return false;
+        return broadcastingNodes[addr].stakedTokens != 0;
     }
 
     function IsNodeStorage(address addr) external view returns (bool) {
-        if (storageNodes[addr].stakedTokens != 0) {
-            return true;
-        }
-        return false;
+        return storageNodes[addr].stakedTokens != 0;
     }
 }
