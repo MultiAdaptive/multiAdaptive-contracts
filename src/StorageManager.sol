@@ -22,14 +22,14 @@ contract StorageManager is Initializable, ISemver {
     string public constant version = "0.1.0";
 
     NodeManager public nodeManager;
-    uint256 nonce;
+
+    uint256 public nonce;
 
     mapping(bytes32 => NodeGroup) public nodeGroup;
     mapping(uint256 => NameSpace) public nameSpace;
 
     event NodeInfoStored(address indexed user, bytes32 indexed key, address[] addrs);
     event NameSpaceCreated(uint256 indexed id, address indexed creator, address[] addr);
-
 
     /// @notice Constructs the StorageManagement contract.
     constructor() { }
@@ -71,8 +71,12 @@ contract StorageManager is Initializable, ISemver {
         return id;
     }
 
-    function DASKEYSETINFO(bytes32 _key) public view returns (NodeGroup memory) {
+    function NODEGROUP(bytes32 _key) public view returns (NodeGroup memory) {
         return nodeGroup[_key];
+    }
+
+    function NAMESPACE(uint256 _id) public view returns (NameSpace memory) {
+        return nameSpace[_id];
     }
 
     function getKeyForAddresses(
