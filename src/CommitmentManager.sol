@@ -117,8 +117,12 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         payable(msg.sender).transfer(balance);
     }
 
-    function getUserCommitments(address _user, uint256 _index) public view returns (Pairing.G1Point memory) {
+    function getUserCommitment(address _user, uint256 _index) public view returns (Pairing.G1Point memory) {
         return userCommitments[_user][_index];
+    }
+
+    function getNameSpaceCommitment(uint256 _nameSpaceId, uint256 _index) public view returns (Pairing.G1Point memory) {
+        return nameSpaceCommitments[_nameSpaceId][_index];
     }
 
     function COMMITMENTS(uint256 _nonce) public view returns (DaDetails memory) {

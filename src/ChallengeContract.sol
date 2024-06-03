@@ -15,7 +15,7 @@ struct Challenge {
     uint8 status;
     address challenger;
     address storageAddr;
-    address user;
+    uint256 nameSpaceId;
     uint256 start;
     uint256 end;
     uint256 r;
@@ -51,7 +51,7 @@ contract ChallengeContract is Initializable, ISemver, Ownable {
     uint256 public nonce;
 
     event ChallengeCreated(
-        uint256 nonce, address storageAddr, address user, uint256 start, uint256 end, uint256 r, uint256 timeoutBlock
+        uint256 nonce, address storageAddr, uint256 nameSpaceId, uint256 start, uint256 end, uint256 r, uint256 timeoutBlock
     );
 
     event AggregateCommitmentUploaded(uint256 nonce, Pairing.G1Point aggregateCommitment, uint256 timeoutBlock);
@@ -70,7 +70,7 @@ contract ChallengeContract is Initializable, ISemver, Ownable {
         uint256 _start,
         uint256 _end,
         address _storageAddr,
-        address _user,
+        uint256 _nameSpaceId,
         uint256 _r,
         uint256 _point
     )
@@ -85,14 +85,14 @@ contract ChallengeContract is Initializable, ISemver, Ownable {
         challenge.status = 0;
         challenge.challenger = msg.sender;
         challenge.storageAddr = _storageAddr;
-        challenge.user = _user;
+        challenge.nameSpaceId = _nameSpaceId;
         challenge.start = _start;
         challenge.end = _end;
         challenge.r = _r;
         challenge.point = _point;
         challenge.timeoutBlock = block.number + 600;
 
-        emit ChallengeCreated(nonce, _storageAddr, _user, _start, _end, _r, challenge.timeoutBlock);
+        emit ChallengeCreated(nonce, _storageAddr, _nameSpaceId, _start, _end, _r, challenge.timeoutBlock);
 
         nonce++;
     }
@@ -179,13 +179,13 @@ contract ChallengeContract is Initializable, ISemver, Ownable {
 
         if (details.consensusIndex == details.noConsensusIndex - 1) {
             if (details.consensusIndex == challenge.start) {
-                details.consensusCommitment = aggregateCommitment(challenge.start, challenge.user, challenge.r);
+                details.consensusCommitment = aggregateCommitment(challenge.start, challenge.nameSpaceId, challenge.r);
             }
             bool isValid = verifyAggregateCommitment(
                 details.consensusCommitment,
                 details.noConsensusCommitment,
                 details.noConsensusIndex,
-                challenge.user,
+                challenge.nameSpaceId,
                 challenge.r
             );
             challenge.status = isValid ? 8 : 7;
@@ -198,7 +198,7 @@ contract ChallengeContract is Initializable, ISemver, Ownable {
         Pairing.G1Point memory _consensusCommitment,
         Pairing.G1Point memory _aggregateCommitment,
         uint256 _index,
-        address _user,
+        uint256 _nameSpaceId,
         uint256 _r
     )
         public
@@ -206,7 +206,7 @@ contract ChallengeContract is Initializable, ISemver, Ownable {
         returns (bool)
     {
         bytes32 hash = Hashing.hashFold(_r, _index);
-        Pairing.G1Point memory n0 = Pairing.mulScalar(commitment(_index, _user), uint256(hash));
+        Pairing.G1Point memory n0 = Pairing.mulScalar(commitment(_index, _nameSpaceId), uint256(hash));
         Pairing.G1Point memory n1 = Pairing.plus(_consensusCommitment, n0);
         return Pairing.equal(_aggregateCommitment, n1);
     }
@@ -226,14 +226,14 @@ contract ChallengeContract is Initializable, ISemver, Ownable {
 
     function aggregateCommitment(
         uint256 _index,
-        address _user,
+        uint256 _nameSpaceId,
         uint256 _r
     )
         public
         view
         returns (Pairing.G1Point memory)
     {
-        Pairing.G1Point memory n0 = commitment(_index, _user);
+        Pairing.G1Point memory n0 = commitment(_index, _nameSpaceId);
         bytes32 hash = Hashing.hashFold(_r, _index);
         return Pairing.mulScalar(n0, uint256(hash));
     }
@@ -244,8 +244,8 @@ contract ChallengeContract is Initializable, ISemver, Ownable {
         payable(msg.sender).transfer(balance);
     }
 
-    function commitment(uint256 _index, address _user) public view returns (Pairing.G1Point memory) {
-        return commitmentManager.getUserCommitments(_user, _index);
+    function commitment(uint256 _index, uint256 _nameSpaceId) public view returns (Pairing.G1Point memory) {
+        return commitmentManager.getNameSpaceCommitment(_nameSpaceId, _index);
     }
 
     function SetKZG(address _addr) external onlyOwner {
