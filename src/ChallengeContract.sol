@@ -238,6 +238,12 @@ contract ChallengeContract is Initializable, ISemver, Ownable {
         return Pairing.mulScalar(n0, uint256(hash));
     }
 
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "StorageManager: No balance to withdraw");
+        payable(msg.sender).transfer(balance);
+    }
+
     function commitment(uint256 _index, address _user) public view returns (Pairing.G1Point memory) {
         return commitmentManager.getUserCommitments(_user, _index);
     }
