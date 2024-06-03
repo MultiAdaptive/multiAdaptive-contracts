@@ -42,8 +42,8 @@ library Hashing {
     /// @notice Used for generating a signature hash.
     function hashData(
         address _target,
-        uint64 _index,
-        uint64 _length,
+        uint256 _index,
+        uint256 _length,
         uint256 _x,
         uint256 _y
     )
