@@ -51,7 +51,13 @@ contract ChallengeContract is Initializable, ISemver, Ownable {
     uint256 public nonce;
 
     event ChallengeCreated(
-        uint256 nonce, address storageAddr, uint256 nameSpaceId, uint256 start, uint256 end, uint256 r, uint256 timeoutBlock
+        uint256 nonce,
+        address storageAddr,
+        uint256 nameSpaceId,
+        uint256 start,
+        uint256 end,
+        uint256 r,
+        uint256 timeoutBlock
     );
 
     event AggregateCommitmentUploaded(uint256 nonce, Pairing.G1Point aggregateCommitment, uint256 timeoutBlock);

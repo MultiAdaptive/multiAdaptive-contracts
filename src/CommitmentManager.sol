@@ -63,7 +63,6 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
     }
 
     function SubmitCommitment(
-        uint256 _index,
         uint256 _length,
         bytes32 _nodeGroupKey,
         bytes[] calldata _signatures,
@@ -77,26 +76,25 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         require(msg.value > getGas(_length), "CommitmentManager: insufficient fee");
         require(info.addrs.length > 0, "CommitmentManager:key does not exist");
         require(info.addrs.length == _signatures.length, "CommitmentManager:mismatchedSignaturesCount");
-        require(indices[tx.origin] == _index, "CommitmentManager:index error");
+        uint256 index = indices[tx.origin];
 
-        uint256 num = validateSignatures(info, _signatures, _commitment, _index, _length);
+        uint256 num = validateSignatures(info, _signatures, _commitment, index, _length);
         require(num >= info.requiredAmountOfSignatures, "CommitmentManager:signature count mismatch");
 
         if (_nameSpaceId != 0) {
             handleNamespace(_nameSpaceId, _commitment, _length);
         }
-
         committeeRoot = Hashing.hashCommitmentRoot(_commitment.X, _commitment.Y, tx.origin, committeeRoot);
 
         emit SendDACommitment(
-            tx.origin, _commitment, block.timestamp, nonce, _index, _length, committeeRoot, _nodeGroupKey, _signatures
+            tx.origin, _commitment, block.timestamp, nonce, index, _length, committeeRoot, _nodeGroupKey, _signatures
         );
 
         bytes32 hash = Hashing.hashCommitment(_commitment.X, _commitment.Y);
 
         daDetails[hash] = DaDetails({ timestamp: block.timestamp, hashSignatures: Hashing.hashSignatures(_signatures) });
 
-        userCommitments[tx.origin][_index] = _commitment;
+        userCommitments[tx.origin][index] = _commitment;
         indices[tx.origin]++;
         nonce++;
     }
@@ -121,7 +119,14 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         return userCommitments[_user][_index];
     }
 
-    function getNameSpaceCommitment(uint256 _nameSpaceId, uint256 _index) public view returns (Pairing.G1Point memory) {
+    function getNameSpaceCommitment(
+        uint256 _nameSpaceId,
+        uint256 _index
+    )
+        public
+        view
+        returns (Pairing.G1Point memory)
+    {
         return nameSpaceCommitments[_nameSpaceId][_index];
     }
 
