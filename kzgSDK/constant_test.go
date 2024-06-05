@@ -1,12 +1,16 @@
 package main
 
 import (
+	"crypto/rand"
+	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/status-im/keycard-go/hexutils"
 	"github.com/stretchr/testify/assert"
 	"math/big"
+	"os"
 	"testing"
+	"time"
 )
 
 func TestSRSFromSol(t *testing.T) {
@@ -151,4 +155,57 @@ func TestGenerateSRSFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
+}
+
+func TestSRSPerformance(t *testing.T) {
+	srsSize := new(big.Int).Exp(big.NewInt(2), big.NewInt(20), nil).Uint64()
+	srs, _ := kzg.NewSRS(srsSize, big.NewInt(42))
+
+	const dataSize = 10 * 1024 * 1024 // 5 MB
+	data := make([]byte, dataSize)
+	_, err := rand.Read(data)
+	if err != nil {
+		fmt.Println("Error generating random data:", err)
+		return
+	}
+	time0 := time.Now()
+
+	gamma := dataToPolynomial(data)
+	time1 := time.Now()
+	// compute ∑ᵢγⁱfᵢ
+	commit, _ := kzg.Commit(gamma, srs.Pk)
+	time2 := time.Now()
+
+	openString := string("14717431381412684312242958025344435075661116310517857129509110506817203556416")
+	var openFr fr.Element
+	openFr.SetString(openString)
+
+	proof, err := kzg.Open(gamma, openFr, srs.Pk)
+	if err != nil {
+		panic(err)
+	}
+	time3 := time.Now()
+
+	for i := 0; i < 1000; i++ {
+		err = kzg.Verify(&commit, &proof, openFr, srs.Vk)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	time4 := time.Now()
+	fmt.Printf("转换时间: %.2f\n", time1.Sub(time0).Seconds())
+	fmt.Printf("承诺时间: %.2f\n", time2.Sub(time1).Seconds())
+	fmt.Printf("Proof时间: %.2f\n", time3.Sub(time2).Seconds())
+	fmt.Printf("Verify时间: %.2f\n", time4.Sub(time3).Seconds())
+	file, err := os.Create("./srs")
+	if err != nil {
+		fmt.Println("create file failed, ", err)
+	}
+	defer file.Close()
+	srs.WriteTo(file)
+	if err != nil {
+		fmt.Println("write file failed, ", err)
+	}
+	//fmt.Printf(commit.String(), proof.H.String())
 }
