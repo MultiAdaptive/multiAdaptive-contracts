@@ -209,3 +209,56 @@ func TestSRSPerformance(t *testing.T) {
 	}
 	//fmt.Printf(commit.String(), proof.H.String())
 }
+
+func TestSRSPerformanceTwo(t *testing.T) {
+	srsSize := new(big.Int).Exp(big.NewInt(2), big.NewInt(20), nil).Uint64()
+	srs, _ := kzg.NewSRS(srsSize, big.NewInt(42))
+
+	//num := 8192
+	num := 81920
+	polynomials := make([][]fr.Element, num)
+	commits := make([]kzg.Digest, num)
+	const dataSize = 128 * 1024
+
+	time0 := time.Now()
+	for i := 0; i < num; i++ {
+		data := make([]byte, dataSize)
+		_, err := rand.Read(data)
+		if err != nil {
+			fmt.Println("Error generating random data:", err)
+			return
+		}
+		polynomial := dataToPolynomial(data)
+		commit, _ := kzg.Commit(polynomial, srs.Pk)
+		polynomials[i] = polynomial
+		commits[i] = commit
+
+	}
+	// compute ∑ᵢγⁱfᵢ
+	time1 := time.Now()
+	openString := string("14717431381412684312242958025344435075661116310517857129509110506817203556416")
+	var openFr fr.Element
+	openFr.SetString(openString)
+	var r fr.Element
+	r.SetRandom()
+
+	proof := Responce(polynomials, openFr, r, srs)
+	time2 := time.Now()
+
+	aggreCommit, err := FoldedCommits(commits, r, 0, uint(num))
+	if err != nil {
+		panic(err)
+	}
+	time3 := time.Now()
+	err = kzg.Verify(&aggreCommit, &proof, openFr, srs.Vk)
+	if err != nil {
+		panic(err)
+	}
+	time4 := time.Now()
+
+	fmt.Printf("准备数据时间: %.2f\n", time1.Sub(time0).Seconds())
+	fmt.Printf("生成proof时间: %.2f\n", time2.Sub(time1).Seconds())
+	fmt.Printf("聚合承诺时间: %.2f\n", time3.Sub(time2).Seconds())
+	fmt.Printf("验证时间: %.6f\n", time4.Sub(time3).Seconds())
+
+}
