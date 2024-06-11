@@ -83,7 +83,7 @@ contract ChallengeContract is Initializable, ISemver, Ownable {
         public
         payable
     {
-        require(msg.value > 0, "ChallengeContract: minimum entry fee required");
+        //        require(msg.value > 0, "ChallengeContract: minimum entry fee required");
 
         Challenge storage challenge = challenges[nonce];
 

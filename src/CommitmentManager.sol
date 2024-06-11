@@ -73,7 +73,7 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         payable
     {
         NodeGroup memory info = storageManagement.NODEGROUP(_nodeGroupKey);
-        require(msg.value > getGas(_length), "CommitmentManager: insufficient fee");
+        //        require(msg.value > getGas(_length), "CommitmentManager: insufficient fee");
         require(info.addrs.length > 0, "CommitmentManager:key does not exist");
         require(info.addrs.length == _signatures.length, "CommitmentManager:mismatchedSignaturesCount");
         uint256 index = indices[tx.origin];
@@ -103,7 +103,7 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         NameSpace memory nameSpace = storageManagement.NAMESPACE(_nameSpaceId);
 
         require(nameSpace.creator != tx.origin, "StorageManager:the namespace is invalid or does not belong to you.");
-        require(msg.value > 2 * getGas(_length), "CommitmentManager: insufficient fee");
+        //        require(msg.value > 2 * getGas(_length), "CommitmentManager: insufficient fee");
         uint256 index = nameSpaceIndex[_nameSpaceId];
         nameSpaceCommitments[_nameSpaceId][index] = _commitment;
         nameSpaceIndex[_nameSpaceId]++;

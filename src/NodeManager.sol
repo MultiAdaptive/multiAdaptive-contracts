@@ -33,18 +33,18 @@ contract NodeManager is Initializable, ISemver {
     /// @notice Initializer
     function initialize() public initializer { }
 
-    function RegisterBroadcastNode(NodeInfo calldata info) external payable {
+    function RegisterBroadcastNode(NodeInfo calldata info) external {
         require(info.addr == tx.origin);
-        require(msg.value == info.stakedTokens);
+        //        require(msg.value == info.stakedTokens);
 
         broadcastNodeList.push(info.addr);
         broadcastingNodes[info.addr] = info;
         emit BroadcastNode(info.addr, info.url, info.name, info.stakedTokens);
     }
 
-    function RegisterStorageNode(NodeInfo calldata info) external payable {
+    function RegisterStorageNode(NodeInfo calldata info) external {
         require(info.addr == tx.origin);
-        require(msg.value == info.stakedTokens);
+        //        require(msg.value == info.stakedTokens);
 
         storageNodeList.push(info.addr);
         storageNodes[info.addr] = info;
