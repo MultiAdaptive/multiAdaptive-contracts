@@ -36,7 +36,6 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
     mapping(bytes32 => DaDetails) public daDetails;
 
     event SendDACommitment(
-        address user,
         Pairing.G1Point commitment,
         uint256 timestamp,
         uint256 nonce,
@@ -44,6 +43,7 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         uint256 len,
         bytes32 root,
         bytes32 dasKey,
+        uint256 nameSpaceId,
         bytes[] signatures
     );
 
@@ -87,7 +87,7 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         committeeRoot = Hashing.hashCommitmentRoot(_commitment.X, _commitment.Y, tx.origin, committeeRoot);
 
         emit SendDACommitment(
-            tx.origin, _commitment, block.timestamp, nonce, index, _length, committeeRoot, _nodeGroupKey, _signatures
+            _commitment, block.timestamp, nonce, index, _length, committeeRoot, _nodeGroupKey, _nameSpaceId, _signatures
         );
 
         bytes32 hash = Hashing.hashCommitment(_commitment.X, _commitment.Y);
