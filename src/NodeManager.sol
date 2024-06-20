@@ -58,4 +58,22 @@ contract NodeManager is Initializable, ISemver {
     function IsNodeStorage(address addr) external view returns (bool) {
         return storageNodes[addr].stakedTokens != 0;
     }
+
+    function GetBroadcastingNodes() external view returns (NodeInfo[] memory nodes) {
+        uint256 totalNodes = broadcastNodeList.length;
+        nodes = new NodeInfo[](totalNodes);
+
+        for (uint256 i = 0; i < totalNodes; i++) {
+            nodes[i] = broadcastingNodes[broadcastNodeList[i]];
+        }
+    }
+
+    function GetstorageNodes() external view returns (NodeInfo[] memory nodes) {
+        uint256 totalNodes = storageNodeList.length;
+        nodes = new NodeInfo[](totalNodes);
+
+        for (uint256 i = 0; i < totalNodes; i++) {
+            nodes[i] = storageNodes[storageNodeList[i]];
+        }
+    }
 }
