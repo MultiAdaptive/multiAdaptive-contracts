@@ -102,7 +102,7 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
     function handleNamespace(uint256 _nameSpaceId, Pairing.G1Point calldata _commitment, uint256 _length) internal {
         NameSpace memory nameSpace = storageManagement.NAMESPACE(_nameSpaceId);
 
-        require(nameSpace.creator != tx.origin, "StorageManager:the namespace is invalid or does not belong to you.");
+        require(nameSpace.creator == tx.origin, "StorageManager:the namespace is invalid or does not belong to you.");
         //        require(msg.value > 2 * getGas(_length), "CommitmentManager: insufficient fee");
         uint256 index = nameSpaceIndex[_nameSpaceId];
         nameSpaceCommitments[_nameSpaceId][index] = _commitment;
