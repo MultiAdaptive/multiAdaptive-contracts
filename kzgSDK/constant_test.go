@@ -16,7 +16,6 @@ import (
 func TestSRSFromSol(t *testing.T) {
 
 	ConsPolynomial := ConstPoly()
-	//println(ConsPolynomial[0].String())
 	srs, _ := SRSFromSol()
 	Commit, err := kzg.Commit(ConsPolynomial, srs.Pk)
 	if err != nil {
@@ -62,10 +61,6 @@ func TestConstPolys(t *testing.T) {
 
 	var Commit0Index kzg.Digest
 	Commit0Index.ScalarMultiplication(&cs[0], &gammaBigInt)
-	println("gammaHash0", gammaBigInt.String())
-	println("commit0:", cs[0].String())
-	println("	commit0index", Commit0Index.String())
-
 	var NewCommitO12 kzg.Digest
 	NewCommitO12.Add(&Commit2Index, &Commit01)
 	assert.Equal(t, Commit012, NewCommitO12)
@@ -80,20 +75,6 @@ func TestConstPolys(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	for i := 0; i < numPolynomials; i++ {
-		println("承诺", i, cs[i].String())
-	}
-	println("聚合承诺{0,1,2}:", Commit012.String())
-	FoldCommit01, _ := FoldedCommits(cs, gammaFr, 0, 2)
-	println("聚合承诺{0,1}:", FoldCommit01.String())
-	println("打开点", openFr.String())
-	println("随机数", gammaFr.String())
-	println("证明", proof.H.String())
-	println("打开值", proof.ClaimedValue.String())
-
-	println("hash", hexutils.BytesToHex(gammaHash.Bytes()))
-	println("mulScalar", Commit2Index.String())
-	println("puls", NewCommitO12.String())
 
 	X := string("4609433240464190393630369188019246732157453029070459264096117840426817898433")
 	Y := string("13127155654090834813926862403470794676157269288827208827646200804414516262849")
@@ -136,11 +117,6 @@ func TestConstPolys(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	println("三个承诺的聚合：", Foldcommits3.String())
-	println("挑战点", openFr.String())
-	println("打开值", proofTest.ClaimedValue.String())
-	println("前两个聚合承诺：", Foldcommits2.String())
-
 	var TestCommit2Index2 kzg.Digest
 	TestCommit2Index2.ScalarMultiplication(&commits[2], &TestgammaBigInt)
 	var TestNewCommitO12 kzg.Digest

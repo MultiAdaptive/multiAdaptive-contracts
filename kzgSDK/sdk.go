@@ -2,12 +2,10 @@ package main
 
 import (
 	"github.com/consensys/gnark-crypto/ecc"
-	bn254 "github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/holiman/uint256"
 )
 
 const dChunkSize = 30
@@ -15,11 +13,8 @@ const dChunkSize = 30
 type DomiconSdk struct {
 	srs *kzg.SRS
 }
-type ProofSol struct {
-	proof     bn254.G1Affine
-	openValue uint256.Int
-}
 
+// FoldedCommits computes a folded commitment from a slice of commitments using a gamma element.
 func FoldedCommits(
 	Commits []kzg.Digest,
 	gamma fr.Element,
@@ -27,19 +22,8 @@ func FoldedCommits(
 	to uint,
 ) (kzg.Digest, error) {
 	var AggreCommit kzg.Digest
+	//Generate random hashes based on gamma, from, and to indices
 	gammasBytes := GetRandomsHash(gamma, from, to)
-	gammas := HashToFrElements(gammasBytes)
-	_, err := AggreCommit.MultiExp(Commits[from:to], gammas[from:to], ecc.MultiExpConfig{})
-	return AggreCommit, err
-}
-func FoldedCommitsUnit(
-	Commits []kzg.Digest,
-	gamma uint256.Int,
-	from uint,
-	to uint,
-) (kzg.Digest, error) {
-	var AggreCommit kzg.Digest
-	gammasBytes := GetRandomsHashUnit256(gamma, from, to)
 	gammas := HashToFrElements(gammasBytes)
 	_, err := AggreCommit.MultiExp(Commits[from:to], gammas[from:to], ecc.MultiExpConfig{})
 	return AggreCommit, err
@@ -65,74 +49,25 @@ func chunkBytes(data []byte, chunkSize int) [][]byte {
 	return chunks
 }
 
+// dataToPolynomial converts byte data into a slice of fr.Element representing a polynomial.
 func dataToPolynomial(data []byte) []fr.Element {
 	chunks := chunkBytes(data, dChunkSize)
 	chunksLen := len(chunks)
-
 	ps := make([]fr.Element, chunksLen)
 	for i, chunk := range chunks {
 		ps[i].SetBytes(chunk)
 	}
 	return ps
 }
-func dataToPolynomialUnit(data []byte) []uint256.Int {
-	chunks := chunkBytes(data, dChunkSize)
-	chunksLen := len(chunks)
-	ps := make([]uint256.Int, chunksLen)
-	for i, chunk := range chunks {
-		ps[i].SetBytes(chunk)
-	}
-	return ps
-}
-func PolynomialChangeToFr(poly []uint256.Int) []fr.Element {
-	PolynomialFr := make([]fr.Element, len(poly))
-	for i, temppoly := range poly {
-		polybytes := temppoly.Bytes()
-		PolynomialFr[i].SetBytes(polybytes)
-	}
-	return PolynomialFr
-}
 
-func FoldedPolynomialsUnit(
-	polynomialsUnit [][]uint256.Int,
-	gamma uint256.Int,
-) []fr.Element {
-	polynomials := make([][]fr.Element, len(polynomialsUnit))
-	//var TempPolynomials []fr.Element
-	for i, cuPoly := range polynomialsUnit {
-		polynomials[i] = PolynomialChangeToFr(cuPoly)
-	}
-	gammasBytes := GetRandomsHashUnit256(gamma, 0, uint(len(polynomials)))
-	gammas := HashToFrElements(gammasBytes)
-	//gammas := GetRandomsHash(gamma, len(polynomials))
-	// compute ∑ᵢγⁱfᵢ
-	// find the largest polynomial
-	largestPoly := len(polynomials[0])
-	for i := 1; i < len(polynomials); i++ {
-		if len(polynomials[i]) > largestPoly {
-			largestPoly = len(polynomials[i])
-		}
-	}
-	FoldedPolynomial := make([]fr.Element, largestPoly)
-	//FoldedPolynomialUnit := make([]uint256.Int, largestPoly)
-	for i := 0; i < len(polynomials); i++ {
-		var pj fr.Element
-		for j := 0; j < len(polynomials[i]); j++ {
-			pj.Mul(&polynomials[i][j], &gammas[i])
-			FoldedPolynomial[j].Add(&FoldedPolynomial[j], &pj)
-		}
-		//FoldedPolynomialUnit[i] = FoldedPolynomial[i].Bits()
-	}
-	return FoldedPolynomial
-}
-
+// FoldedPolynomials computes a folded polynomial from a slice of polynomials using a gamma element.
 func FoldedPolynomials(
 	polynomials [][]fr.Element,
 	gamma fr.Element,
 ) []fr.Element {
+	// Generate random hashes based on gamma and the number of polynomials
 	gammasBytes := GetRandomsHash(gamma, 0, uint(len(polynomials)))
 	gammas := HashToFrElements(gammasBytes)
-	//gammas := GetRandomsHash(gamma, len(polynomials))
 	// compute ∑ᵢγⁱfᵢ
 	// find the largest polynomial
 	largestPoly := len(polynomials[0])
@@ -151,36 +86,35 @@ func FoldedPolynomials(
 	}
 	return FoldedPolynomial
 }
+
+// Responce generates an opening proof of polynomials using the KZG commitment scheme.
+//
+//	polynomials: Coefficients of polynomials, represented as a 2D array of fr.Element.
+//	openPoint: Point at which the polynomial is opened for verification.
+//	gamma: Value used for folding the polynomial.
+//	srs: Setup parameters for KZG.
 func Responce(
 	polynomials [][]fr.Element,
 	openPoint fr.Element,
 	gamma fr.Element,
 	srs *kzg.SRS,
 ) kzg.OpeningProof {
+	//Transform the array of polynomials into a single polynomial using gamma.
 	FoldPoly := FoldedPolynomials(polynomials, gamma)
+	//Compute the proof of the polynomial FoldPoly  at the opening point.
 	proof, err := kzg.Open(FoldPoly, openPoint, srs.Pk)
 	if err != nil {
-		println("failed to open FoldPoly")
 		panic(err)
 	}
 	return proof
 }
-func ResponceUnit(
-	polynomials [][]uint256.Int,
-	openPoint uint256.Int,
-	gamma uint256.Int,
-	srs *kzg.SRS,
-) kzg.OpeningProof {
-	FoldPoly := FoldedPolynomialsUnit(polynomials, gamma)
-	var openPointFr fr.Element
-	openPointFr.SetBytes(openPoint.Bytes())
-	proof, err := kzg.Open(FoldPoly, openPointFr, srs.Pk)
-	if err != nil {
-		println("failed to open FoldPoly")
-		panic(err)
-	}
-	return proof
-}
+
+// Responce generates an opening proof of datas using the KZG commitment scheme.
+
+// datas: represented as a 2D array of byte.
+// openPoint: Point at which the polynomial is opened for verification.
+// gamma: Value used for folding the polynomial.
+// srs: Setup parameters for KZG.
 func ResponceDatas(
 	datas [][]byte,
 	openPoint fr.Element,
@@ -188,35 +122,22 @@ func ResponceDatas(
 	srs *kzg.SRS,
 ) kzg.OpeningProof {
 	polynomials := make([][]fr.Element, len(datas))
+	//transform the datas to polynomials
 	for i, data := range datas {
 		polynomials[i] = dataToPolynomial(data)
 	}
+	//transform the polynomials to a fold polynomial
 	FoldPoly := FoldedPolynomials(polynomials, gamma)
+	//calculate the proof of fold polynomial
 	proof, err := kzg.Open(FoldPoly, openPoint, srs.Pk)
 	if err != nil {
 		panic(err)
 	}
 	return proof
 }
-func ResponceUnitSol(
-	polynomials [][]uint256.Int,
-	openPoint uint256.Int,
-	gamma uint256.Int,
-	srs *kzg.SRS,
-) ProofSol {
-	FoldPoly := FoldedPolynomialsUnit(polynomials, gamma)
-	var openPointFr fr.Element
-	openPointFr.SetBytes(openPoint.Bytes())
-	proof, err := kzg.Open(FoldPoly, openPointFr, srs.Pk)
-	if err != nil {
-		println("failed to open FoldPoly")
-		panic(err)
-	}
-	return ProofSol{
-		proof:     proof.H,
-		openValue: proof.ClaimedValue.Bits(),
-	}
-}
+
+// PutUint256 encodes an unsigned 64-bit integer v into the last 8 bytes of byte slice b.
+// It ensures that only the last 8 bytes are modified, filling the preceding bytes with zeros.
 func PutUint256(b []byte, v uint64) {
 	// Early bounds check to guarantee safety of writes below
 	_ = b[31]
@@ -234,9 +155,13 @@ func PutUint256(b []byte, v uint64) {
 	}
 }
 
+// Calculate r_i=hash(gamma,index)
 func GetRandomHash(gamma fr.Element, index uint) common.Hash {
+	// Marshal gamma to bytes
 	gammaBytes := gamma.Marshal()
+	//Prepare a 32-byte slice for FillBytes32
 	FillBytes32 := make([]byte, 32)
+
 	PutUint256(FillBytes32, uint64(index))
 	data := append(gammaBytes, FillBytes32...)
 	return crypto.Keccak256Hash(data)
@@ -244,30 +169,8 @@ func GetRandomHash(gamma fr.Element, index uint) common.Hash {
 func GetRandomsHash(gamma fr.Element, from uint, to uint) []common.Hash {
 	gammas := make([]common.Hash, 0)
 	var tempGamma common.Hash
-	//gammas := make([]common.Hash, num)
 	for i := from; i < to; i++ {
 		tempGamma = GetRandomHash(gamma, i)
-		gammas = append(gammas, tempGamma)
-	}
-	return gammas
-}
-
-func GetRandomHashUnit256(gamma uint256.Int, index uint) common.Hash {
-	gammaU := gamma.Bytes()
-	FillBytes32 := make([]byte, 32)
-
-	PutUint256(FillBytes32, uint64(index))
-
-	data := append(gammaU, FillBytes32...)
-	return crypto.Keccak256Hash(data)
-}
-func GetRandomsHashUnit256(gamma uint256.Int, from uint, to uint) []common.Hash {
-	//num := to - from
-	gammas := make([]common.Hash, 0)
-	var tempGamma common.Hash
-	//gammas := make([]common.Hash, num)
-	for i := from; i < to; i++ {
-		tempGamma = GetRandomHashUnit256(gamma, i)
 		gammas = append(gammas, tempGamma)
 	}
 	return gammas

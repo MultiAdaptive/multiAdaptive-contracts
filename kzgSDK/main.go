@@ -34,7 +34,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	println("success")
 }
 
 func DemoRandomPolynomial(size int) []fr.Element {
