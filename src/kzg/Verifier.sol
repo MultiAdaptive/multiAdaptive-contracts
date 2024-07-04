@@ -3,6 +3,9 @@ pragma solidity ^0.8.0;
 import "./Pairing.sol";
 import { Constants } from "./Constants.sol";
 
+// Declaration that the technical structure of this contract is based on code from:
+// https://github.com/weijiekoh/libkzg.git
+
 contract Verifier is Constants {
     using Pairing for *;
 
@@ -103,24 +106,4 @@ contract Verifier is Constants {
         }
         return result;
     }
-
-    /*
-    // Uncomment to perform gas benchmarks
-    function commitBenchmark(
-        uint256[] memory _coefficients
-    ) public {
-        commit(_coefficients);
-    }
-
-    function verifyMultiBenchmark(
-        Pairing.G1Point memory _commitment,
-        Pairing.G2Point memory _proof,
-        uint256[] memory _indices,
-        uint256[] memory _values,
-        uint256[] memory _iCoeffs,
-        uint256[] memory _zCoeffs
-    ) public {
-        verifyMulti(_commitment, _proof, _indices, _values, _iCoeffs, _zCoeffs);
-    }
-    */
 }
