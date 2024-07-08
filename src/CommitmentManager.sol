@@ -80,7 +80,7 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
     /// @param _nodeGroupKey Key of the node group.
     /// @param _signatures Array of signatures from broadcast nodes.
     /// @param _commitment The commitment data.
-    function SubmitCommitment(
+    function submitCommitment(
         uint256 _length,
         uint256 _timeout,
         bytes32 _nameSpaceKey,
