@@ -281,7 +281,7 @@ contract Deploy is Deployer {
 
     /// @notice Deploy the ProxyAdmin
     function deployProxyAdmin() public broadcast returns (address addr_) {
-        ProxyAdmin admin = new ProxyAdmin({_owner: msg.sender});
+        ProxyAdmin admin = new ProxyAdmin({ _owner: msg.sender });
         require(admin.owner() == msg.sender);
 
         AddressManager addressManager = AddressManager(mustGetAddress("AddressManager"));
@@ -299,7 +299,7 @@ contract Deploy is Deployer {
     /// @notice Deploy the StorageSetter contract, used for upgrades.
     function deployStorageSetter() public broadcast returns (address addr_) {
         console.log("Deploying StorageSetter");
-        StorageSetter setter = new StorageSetter{salt: _implSalt()}();
+        StorageSetter setter = new StorageSetter{ salt: _implSalt() }();
         console.log("StorageSetter deployed at: %s", address(setter));
         string memory version = setter.version();
         console.log("StorageSetter version: %s", version);
@@ -329,7 +329,7 @@ contract Deploy is Deployer {
         broadcast
         returns (address addr_)
     {
-        Proxy proxy = new Proxy({_admin: _proxyOwner});
+        Proxy proxy = new Proxy({ _admin: _proxyOwner });
 
         require(EIP1967Helper.getAdmin(address(proxy)) == _proxyOwner);
 
@@ -344,7 +344,7 @@ contract Deploy is Deployer {
 
     /// @notice Deploy the NodeManager
     function deployNodeManager() public broadcast returns (address addr_) {
-        NodeManager node = new NodeManager{salt: _implSalt()}();
+        NodeManager node = new NodeManager{ salt: _implSalt() }();
 
         save("NodeManager", address(node));
         console.log("NodeManager deployed at %s", address(node));
@@ -353,7 +353,7 @@ contract Deploy is Deployer {
     }
 
     function deployStorageManager() public broadcast returns (address addr_) {
-        StorageManager storageManagement = new StorageManager{salt: _implSalt()}();
+        StorageManager storageManagement = new StorageManager{ salt: _implSalt() }();
 
         save("StorageManager", address(storageManagement));
         console.log("StorageManager deployed at %s", address(storageManagement));
@@ -364,7 +364,7 @@ contract Deploy is Deployer {
     /// @notice Deploy the NodeManager
     function deployCommitmentManager() public broadcast returns (address addr_) {
         console.log("Deploying CommitmentManager implementation");
-        CommitmentManager comm = new CommitmentManager{salt: _implSalt()}();
+        CommitmentManager comm = new CommitmentManager{ salt: _implSalt() }();
 
         save("CommitmentManager", address(comm));
         console.log("CommitmentManager deployed at %s", address(comm));
@@ -374,7 +374,7 @@ contract Deploy is Deployer {
 
     /// @notice Deploy the NodeManager
     function deployChallengeContract() public broadcast returns (address addr_) {
-        ChallengeContract chall = new ChallengeContract{salt: _implSalt()}();
+        ChallengeContract chall = new ChallengeContract{ salt: _implSalt() }();
 
         save("ChallengeContract", address(chall));
         console.log("ChallengeContract deployed at %s", address(chall));
@@ -437,7 +437,7 @@ contract Deploy is Deployer {
             _implementation: commitmentManager,
             _innerCallData: abi.encodeCall(
                 CommitmentManager.initialize, (NodeManager(nodeManagerProxy), StorageManager(storageManagementProxy))
-                )
+            )
         });
     }
 
@@ -453,7 +453,7 @@ contract Deploy is Deployer {
             _implementation: chall,
             _innerCallData: abi.encodeCall(
                 ChallengeContract.initialize, (NodeManager(nodeManagerProxy), CommitmentManager(commitmentManagerProxy))
-                )
+            )
         });
     }
 }
