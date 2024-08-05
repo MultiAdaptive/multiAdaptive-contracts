@@ -55,14 +55,6 @@ contract NodeManager is Initializable, ISemver {
         _;
     }
 
-    /// @notice Modifier to allow only non-node addresses to call the function.
-    /// @param info Information about the node to be checked
-    modifier onlyNonNode(NodeInfo calldata info) {
-        require(info.addr == msg.sender, "NodeManager: the registered address is inconsistent");
-        require(!isNodeBroadcast(msg.sender) && !isNodeStorage(msg.sender), "NodeManager: node address not allowed");
-        _;
-    }
-
     /// @notice Constructs the NodeManager contract.
     constructor() { }
 
@@ -71,20 +63,25 @@ contract NodeManager is Initializable, ISemver {
 
     /// @notice Registers a new broadcast node.
     /// @param info Struct containing information about the broadcast node.
-    function registerBroadcastNode(NodeInfo calldata info) external onlyEOA onlyNonNode(info) {
+    function registerBroadcastNode(NodeInfo calldata info) external onlyEOA {
         // require(msg.value == info.stakedTokens);
-
-        broadcastNodeList.push(info.addr);
+        require(!isNodeStorage(msg.sender), "NodeManager: already a storage node");
+        if (!isNodeBroadcast(msg.sender)) {
+            broadcastNodeList.push(info.addr);
+        }
         broadcastingNodes[info.addr] = info;
         emit BroadcastNode(info.addr, info.url, info.name, info.stakedTokens);
     }
 
     /// @notice Registers a new storage node.
     /// @param info Struct containing information about the storage node.
-    function registerStorageNode(NodeInfo calldata info) external onlyEOA onlyNonNode(info) {
+    function registerStorageNode(NodeInfo calldata info) external onlyEOA {
         // require(msg.value == info.stakedTokens);
+        require(!isNodeBroadcast(msg.sender), "NodeManager: already a broadcast node");
 
-        storageNodeList.push(info.addr);
+        if (!isNodeStorage(msg.sender)) {
+            storageNodeList.push(info.addr);
+        }
         storageNodes[info.addr] = info;
         emit StorageNode(info.addr, info.url, info.name, info.stakedTokens);
     }
