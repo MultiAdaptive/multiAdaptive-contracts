@@ -26,6 +26,9 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
     /// @notice Nonce for the next commitment to be submitted.
     uint256 public nonce;
 
+    /// @notice BaseFee.
+    uint256 public baseFee;
+
     /// @notice Node Manager contract.
     NodeManager public nodeManager;
 
@@ -92,7 +95,7 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         payable
     {
         NodeGroup memory info = storageManagement.NODEGROUP(_nodeGroupKey);
-        // require(msg.value > _getGas(_length), "CommitmentManager: insufficient fee");
+        require(msg.value >= _getGas(_length), "CommitmentManager: insufficient fee");
         require(info.addrs.length > 0, "CommitmentManager:key does not exist");
         require(info.addrs.length == _signatures.length, "CommitmentManager:mismatchedSignaturesCount");
         require(block.timestamp < _timeout, "CommitmentManager:timeout");
@@ -123,6 +126,14 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         uint256 balance = address(this).balance;
         require(balance > 0, "StorageManager: no balance to withdraw");
         payable(msg.sender).transfer(balance);
+    }
+
+    /// @notice Sets the base fee.
+    /// @dev This function can only be called by the contract owner.
+    ///      It updates the base fee to the provided new fee.
+    /// @param _newFee The new base fee to be set.
+    function setBaseFee(uint256 _newFee) external onlyOwner {
+        baseFee = _newFee;
     }
 
     /// @notice Retrieves a user's commitment by index.
@@ -173,7 +184,7 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         NameSpace memory nameSpace = storageManagement.NAMESPACE(_nameSpaceKey);
 
         require(nameSpace.creator == tx.origin, "StorageManager:the namespace is invalid or does not belong to you.");
-        // require(msg.value > 2 * _getGas(_length), "CommitmentManager: insufficient fee");
+        require(msg.value >= _getGas(_length), "CommitmentManager: insufficient fee");
         uint256 index = nameSpaceIndex[_nameSpaceKey];
         nameSpaceCommitments[_nameSpaceKey][index] = _commitment;
         nameSpaceIndex[_nameSpaceKey]++;
@@ -274,7 +285,7 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
     /// @notice Gets the gas cost for a given length of data.
     /// @param _length Length of the data.
     /// @return The gas cost.
-    function _getGas(uint256 _length) internal pure returns (uint256) {
-        return _length;
+    function _getGas(uint256 _length) internal view returns (uint256) {
+        return baseFee * _length;
     }
 }
