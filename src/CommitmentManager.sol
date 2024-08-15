@@ -58,7 +58,7 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         uint256 timestamp,
         uint256 nonce,
         uint256 index,
-        uint256 len,
+        uint256 timeout,
         bytes32 nodeGroupKey,
         bytes32 nameSpaceKey,
         bytes[] signatures
@@ -109,7 +109,7 @@ contract CommitmentManager is Initializable, ISemver, Ownable {
         }
 
         emit SendDACommitment(
-            _commitment, block.timestamp, nonce, index, _length, _nodeGroupKey, _nameSpaceKey, _signatures
+            _commitment, block.timestamp, nonce, index, _timeout, _nodeGroupKey, _nameSpaceKey, _signatures
         );
 
         bytes32 hash = Hashing.hashCommitment(_commitment.X, _commitment.Y);
