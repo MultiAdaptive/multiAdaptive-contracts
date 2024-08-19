@@ -5,19 +5,19 @@ import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { ISemver } from "src/universal/ISemver.sol";
 
+/// @notice Struct containing information about a node.
+struct NodeInfo {
+    string url;
+    string name;
+    uint256 stakedTokens;
+    string location;
+    uint256 maxStorageSpace;
+    address addr;
+}
+
 /// @title NodeManager
 /// @notice This contract manages the registration and information of broadcast and storage nodes.
 contract NodeManager is Initializable, ISemver {
-    /// @notice Struct containing information about a node.
-    struct NodeInfo {
-        string url;
-        string name;
-        uint256 stakedTokens;
-        string location;
-        uint256 maxStorageSpace;
-        address addr;
-    }
-
     /// @notice Semantic version.
     /// @custom:semver 0.1.0
     string public constant version = "0.1.0";
